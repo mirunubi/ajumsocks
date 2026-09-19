@@ -58,3 +58,7 @@ export function callAssortmentAdmin(body: Record<string, unknown>) {
 export function callEventInventory(body: Record<string, unknown>) {
   return call("event-inventory", body, true);
 }
+
+export function callInventoryMovement(body: Record<string, unknown>) {
+  return call("inventory-movement", body, true);
+}

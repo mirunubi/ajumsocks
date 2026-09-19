@@ -446,3 +446,6 @@ verify_jwt = true
 
 [functions.event-inventory]
 verify_jwt = true
+
+[functions.inventory-movement]
+verify_jwt = true

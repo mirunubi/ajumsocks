@@ -69,6 +69,7 @@ export type InventoryLine = {
   delta_qty?: number | null;
   source_check_id?: string;
   updated_at_current?: string;
+  operational_estimated_qty?: number | null;
 };
 
 export function estimatedQty(pack: number, full: number | null, remainder: RemainderLevel | null) {

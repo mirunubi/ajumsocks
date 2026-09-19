@@ -178,12 +178,35 @@ async function getCurrent(
   const event_id = text(body.event_id);
   const denied = await requireEventAccess(req, service, event_id, callerId, isAdmin);
   if (denied) return denied;
-  const [{ data: current }, { data: checks }] = await Promise.all([
+  const [{ data: current }, { data: checks }, { data: location }] = await Promise.all([
     service.from("event_inventory_current").select("*").eq("event_id", event_id).order("updated_at", { ascending: false }),
     service.from("event_inventory_checks").select("*").eq("event_id", event_id).order("started_at", { ascending: false }),
+    service.from("inventory_locations").select("*").eq("event_id", event_id).eq("location_type", "EVENT").maybeSingle(),
   ]);
   const rows = await attachDisplay(service, event_id, (current ?? []) as Array<Record<string, unknown>>);
-  return json(req, { current: rows, checks: checks ?? [] });
+  let positions: Array<Record<string, unknown>> = [];
+  let movements: Array<Record<string, unknown>> = [];
+  if (location) {
+    const [{ data: pos }, { data: moves }] = await Promise.all([
+      service.from("inventory_positions").select("*").eq("location_id", location.id),
+      service
+        .from("inventory_movements")
+        .select("*")
+        .or(`source_location_id.eq.${location.id},destination_location_id.eq.${location.id}`)
+        .order("created_at", { ascending: false })
+        .limit(30),
+    ]);
+    positions = pos ?? [];
+    movements = moves ?? [];
+  }
+  const posBySku = new Map(positions.map((row) => [row.product_variant_id as string, Number(row.estimated_units)]));
+  const merged = rows.map((row) => ({
+    ...row,
+    operational_estimated_qty: posBySku.has(row.product_variant_id as string)
+      ? posBySku.get(row.product_variant_id as string)
+      : null,
+  }));
+  return json(req, { current: merged, checks: checks ?? [], location, positions, movements });
 }
 
 async function listChecks(

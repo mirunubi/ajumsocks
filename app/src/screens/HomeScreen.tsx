@@ -147,6 +147,9 @@ export function HomeScreen() {
         </>
       ) : null}
 
+      <Link className="primary-link" to="/movements">
+        재고 보내기
+      </Link>
       {profile.role === "ADMIN" ? (
         <>
           <Link className="primary-link" to="/events">
@@ -160,6 +163,9 @@ export function HomeScreen() {
           </Link>
           <Link className="primary-link" to="/preparations">
             준비물 관리
+          </Link>
+          <Link className="primary-link" to="/locations">
+            재고 위치
           </Link>
           <Link className="primary-link" to="/users">
             사용자 관리

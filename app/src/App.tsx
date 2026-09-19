@@ -8,7 +8,13 @@ import { EventNewScreen } from "./screens/EventNewScreen";
 import { EventsScreen } from "./screens/EventsScreen";
 import { HomeScreen } from "./screens/HomeScreen";
 import { InviteScreen } from "./screens/InviteScreen";
+import { LocationStockScreen } from "./screens/LocationStockScreen";
+import { LocationsScreen } from "./screens/LocationsScreen";
 import { LoginScreen } from "./screens/LoginScreen";
+import { ClosingDistributeScreen } from "./screens/ClosingDistributeScreen";
+import { MovementDetailScreen } from "./screens/MovementDetailScreen";
+import { MovementNewScreen } from "./screens/MovementNewScreen";
+import { MovementsScreen } from "./screens/MovementsScreen";
 import { PreparationSetDetailScreen } from "./screens/PreparationSetDetailScreen";
 import { PreparationSetsScreen } from "./screens/PreparationSetsScreen";
 import { PreparationsScreen } from "./screens/PreparationsScreen";
@@ -59,6 +65,54 @@ export function App() {
         element={
           <AuthedGuard>
             <EventInventoryCheckScreen />
+          </AuthedGuard>
+        }
+      />
+      <Route
+        path="/events/:eventId/distribute/:checkId"
+        element={
+          <AdminGuard>
+            <ClosingDistributeScreen />
+          </AdminGuard>
+        }
+      />
+      <Route
+        path="/locations"
+        element={
+          <AdminGuard>
+            <LocationsScreen />
+          </AdminGuard>
+        }
+      />
+      <Route
+        path="/locations/:id"
+        element={
+          <AdminGuard>
+            <LocationStockScreen />
+          </AdminGuard>
+        }
+      />
+      <Route
+        path="/movements"
+        element={
+          <AuthedGuard>
+            <MovementsScreen />
+          </AuthedGuard>
+        }
+      />
+      <Route
+        path="/movements/new"
+        element={
+          <AdminGuard>
+            <MovementNewScreen />
+          </AdminGuard>
+        }
+      />
+      <Route
+        path="/movements/:id"
+        element={
+          <AuthedGuard>
+            <MovementDetailScreen />
           </AuthedGuard>
         }
       />
