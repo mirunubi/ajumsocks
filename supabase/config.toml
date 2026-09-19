@@ -437,3 +437,6 @@ verify_jwt = true
 
 [functions.prep-admin]
 verify_jwt = true
+
+[functions.product-admin]
+verify_jwt = true

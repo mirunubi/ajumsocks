@@ -9,6 +9,8 @@ import { LoginScreen } from "./screens/LoginScreen";
 import { PreparationSetDetailScreen } from "./screens/PreparationSetDetailScreen";
 import { PreparationSetsScreen } from "./screens/PreparationSetsScreen";
 import { PreparationsScreen } from "./screens/PreparationsScreen";
+import { ProductDetailScreen } from "./screens/ProductDetailScreen";
+import { ProductsScreen } from "./screens/ProductsScreen";
 import { UsersScreen } from "./screens/UsersScreen";
 
 export function App() {
@@ -70,6 +72,22 @@ export function App() {
         element={
           <AdminGuard>
             <PreparationSetDetailScreen />
+          </AdminGuard>
+        }
+      />
+      <Route
+        path="/products"
+        element={
+          <AdminGuard>
+            <ProductsScreen />
+          </AdminGuard>
+        }
+      />
+      <Route
+        path="/products/:id"
+        element={
+          <AdminGuard>
+            <ProductDetailScreen />
           </AdminGuard>
         }
       />

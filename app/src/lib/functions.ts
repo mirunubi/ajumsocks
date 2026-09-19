@@ -46,3 +46,7 @@ export function callEventPhotos(body: Record<string, unknown>) {
 export function callPrepAdmin(body: Record<string, unknown>) {
   return call("prep-admin", body, true);
 }
+
+export function callProductAdmin(body: Record<string, unknown>) {
+  return call("product-admin", body, true);
+}

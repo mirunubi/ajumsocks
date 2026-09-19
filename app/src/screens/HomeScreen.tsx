@@ -152,6 +152,9 @@ export function HomeScreen() {
           <Link className="primary-link" to="/events">
             행사관리
           </Link>
+          <Link className="primary-link" to="/products">
+            상품 관리
+          </Link>
           <Link className="primary-link" to="/preparations">
             준비물 관리
           </Link>
