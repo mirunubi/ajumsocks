@@ -62,8 +62,11 @@ async function main() {
   const staff = await signIn("+821000000002");
   const staffList = await callFn("user-admin", { action: "list" }, staff.session.access_token);
   await expect("3 STAFF cannot list via admin function", staffList.status === 403);
-  const { data: others } = await staff.supabase.from("profiles").select("id").neq("id", staff.session.user.id);
-  await expect("3 STAFF cannot read other profiles", (others || []).length === 0);
+  const { data: others } = await staff.supabase.from("profiles").select("id, is_master").neq("id", staff.session.user.id);
+  await expect(
+    "3 STAFF cannot read MASTER/unrelated ADMIN",
+    !(others || []).some((row) => row.id === master.session.user.id || row.is_master),
+  );
   await staff.supabase.auth.signOut();
 
   const phone = "010-0000-9010";

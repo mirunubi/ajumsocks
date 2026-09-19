@@ -194,11 +194,16 @@ async function main() {
   const skuPrev = await callFn("assortment-admin", { action: "preview", assortment_set_id: skuRuleSet.json.set.id }, token);
   await expect("6 Product/SKU 직접 Rule", skuRule.status === 200 && skuPrev.json.sku_count === 1, skuPrev.json.error);
 
+  // Category rules also match leftover SKUs from earlier phase verifies on the same DB.
   const womenPrev = await callFn("assortment-admin", { action: "preview", assortment_set_id: womenSetId }, token);
   const womenIds = ids(womenPrev.json.skus);
   await expect(
     "7 Rule Preview 결과 검증",
-    womenPrev.status === 200 && womenPrev.json.sku_count === 3 && womenIds.has(womenA.variants[0].id) && womenIds.has(oneSku),
+    womenPrev.status === 200 &&
+      womenPrev.json.sku_count >= 3 &&
+      womenIds.has(womenA.variants[0].id) &&
+      womenIds.has(oneSku) &&
+      womenIds.has(womenB.variants[0].id),
     JSON.stringify({ count: womenPrev.json.sku_count, ids: [...womenIds] }),
   );
   await expect(
@@ -252,8 +257,13 @@ async function main() {
   );
   await expect("9 행사에 Template 적용", applied.status === 200 && Boolean(applied.json.assortment?.id), applied.json.error);
   const snap = (applied.json.items || []).filter((row) => !row.removed_at);
-  await expect("10 실제 SKU Snapshot 생성", snap.length === 3);
-  await expect("11 같은 SKU 중복 Snapshot 방지", new Set(snap.map((row) => row.product_variant_id)).size === 3);
+  const snapIds = new Set(snap.map((row) => row.product_variant_id));
+  await expect(
+    "10 실제 SKU Snapshot 생성",
+    snap.length >= 3 && snapIds.has(womenA.variants[0].id) && snapIds.has(oneSku) && snapIds.has(womenB.variants[0].id),
+    String(snap.length),
+  );
+  await expect("11 같은 SKU 중복 Snapshot 방지", snapIds.size === snap.length);
 
   const reapply = await callFn(
     "assortment-admin",
