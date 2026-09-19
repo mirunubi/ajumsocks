@@ -20,6 +20,7 @@ import {
 } from "../lib/events";
 import { callEventAdmin, callEventPhotos, callUserAdmin } from "../lib/functions";
 import { EventAssortmentPanel } from "./EventAssortmentPanel";
+import { EventFinancePanel } from "./EventFinancePanel";
 import { EventInventoryPanel } from "./EventInventoryPanel";
 import { EventPrepPanel } from "./EventPrepPanel";
 import { formatE164Display } from "../lib/phone";
@@ -276,6 +277,7 @@ export function EventDetailScreen() {
 
       <EventAssortmentPanel eventId={event.id} isAdmin={isAdmin} />
       <EventInventoryPanel eventId={event.id} />
+      <EventFinancePanel eventId={event.id} isAdmin={isAdmin} startsAt={event.starts_at} endsAt={event.ends_at} />
       <EventPrepPanel eventId={event.id} isAdmin={isAdmin} startsAt={event.starts_at} />
 
       <section className="card">

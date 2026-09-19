@@ -449,3 +449,6 @@ verify_jwt = true
 
 [functions.inventory-movement]
 verify_jwt = true
+
+[functions.event-finance]
+verify_jwt = true

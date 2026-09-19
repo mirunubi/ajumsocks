@@ -3,9 +3,13 @@ import { Link, Navigate } from "react-router-dom";
 import { denialMessage } from "../lib/access";
 import { formatKstRange, scheduleHint } from "../lib/datetime";
 import { EVENT_STATUS_LABEL, type EventRecord } from "../lib/events";
+import { formatWon } from "../lib/finance";
+import { callEventFinance } from "../lib/functions";
 import { daysUntil, prepProgress, type EventPrepItem } from "../lib/preparation";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../lib/session";
+
+type TodaySale = { id: string; name: string; entered: boolean; total: number | null };
 
 function splitEvents(events: EventRecord[], now = new Date()) {
   const t = now.getTime();
@@ -44,6 +48,7 @@ export function HomeScreen() {
   const { loading, session, profile, denial } = useAuth();
   const [events, setEvents] = useState<EventRecord[]>([]);
   const [prepByEvent, setPrepByEvent] = useState<Record<string, EventPrepItem[]>>({});
+  const [todaySales, setTodaySales] = useState<TodaySale[]>([]);
   const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -51,7 +56,8 @@ export function HomeScreen() {
     void Promise.all([
       supabase.from("events").select("id, name, venue_name, starts_at, ends_at, status, address").order("starts_at", { ascending: true }),
       supabase.from("event_preparation_items").select("*").is("removed_at", null),
-    ]).then(([eventResult, prepResult]) => {
+      profile.role === "ADMIN" ? callEventFinance({ action: "get-today-dashboard" }).catch(() => ({ events: [] })) : Promise.resolve({ events: [] }),
+    ]).then(([eventResult, prepResult, dash]) => {
       if (eventResult.error) setMessage(eventResult.error.message);
       else setEvents((eventResult.data ?? []) as EventRecord[]);
       if (prepResult.error) setMessage(prepResult.error.message);
@@ -63,6 +69,7 @@ export function HomeScreen() {
         }
         setPrepByEvent(grouped);
       }
+      setTodaySales(((dash as { events?: TodaySale[] }).events ?? []) as TodaySale[]);
     });
   }, [session, denial, profile]);
 
@@ -122,6 +129,18 @@ export function HomeScreen() {
       </div>
 
       {message ? <div className="error">{message}</div> : null}
+
+      {profile.role === "ADMIN" && todaySales.length > 0 ? (
+        <>
+          <h2 className="section-title">오늘 진행행사 매출</h2>
+          {todaySales.map((row) => (
+            <article className="card" key={row.id}>
+              <strong>{row.name}</strong>
+              <div className="muted">{row.entered ? formatWon(Number(row.total ?? 0)) : "매출 미입력"}</div>
+            </article>
+          ))}
+        </>
+      ) : null}
 
       {incomplete.length > 0 ? (
         <>

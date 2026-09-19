@@ -19,6 +19,7 @@
     "verify:phase5": "node scripts/verify-phase5.mjs",
     "verify:phase6": "node scripts/verify-phase6.mjs",
     "verify:phase7": "node scripts/verify-phase7.mjs",
+    "verify:phase8": "node scripts/verify-phase8.mjs",
     "dev": "npm --prefix app run dev",
     "build": "npm --prefix app run build"
   },
