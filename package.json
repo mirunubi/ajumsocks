@@ -1,0 +1,25 @@
+{
+  "name": "ajumsocks",
+  "private": true,
+  "version": "0.0.0",
+  "description": "아점양말(아점삭스) local tooling (Supabase CLI + seed scripts)",
+  "scripts": {
+    "supabase": "supabase",
+    "start:supabase": "supabase start",
+    "db:reset": "supabase db reset",
+    "db:reset:local": "supabase db reset && node scripts/provision-local-users.mjs && node scripts/write-app-env.mjs",
+    "provision:local": "node scripts/provision-local-users.mjs",
+    "provision:master": "node scripts/provision-master.mjs",
+    "verify:master": "node scripts/verify-master-bootstrap.mjs",
+    "verify:phase0": "node scripts/verify-phase0.mjs",
+    "verify:phase1": "node scripts/verify-phase1.mjs",
+    "verify:phase2": "node scripts/verify-phase2.mjs",
+    "verify:phase3": "node scripts/verify-phase3.mjs",
+    "dev": "npm --prefix app run dev",
+    "build": "npm --prefix app run build"
+  },
+  "devDependencies": {
+    "@supabase/supabase-js": "^2.57.4",
+    "supabase": "^2.40.7"
+  }
+}

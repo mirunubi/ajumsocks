@@ -1,0 +1,3 @@
+-- Login-capable Auth users are created by scripts/provision-local-users.mjs
+-- using the Auth Admin API and Secret Key. Do not insert into auth.users here.
+-- Never put production phone numbers or passwords in this file.

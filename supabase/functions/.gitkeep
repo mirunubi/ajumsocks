@@ -1,0 +1,3 @@
+# Phase 1 Edge Functions live here.
+# Auth Admin / invite provisioning MUST NOT run in the browser.
+# Expected later: invite-create, invite-accept (service_role on the server only).
