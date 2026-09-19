@@ -3,6 +3,7 @@ import { AdminGuard, AuthedGuard } from "./lib/AdminGuard";
 import { AssortmentSetDetailScreen } from "./screens/AssortmentSetDetailScreen";
 import { AssortmentSetsScreen } from "./screens/AssortmentSetsScreen";
 import { EventDetailScreen } from "./screens/EventDetailScreen";
+import { EventInventoryCheckScreen } from "./screens/EventInventoryCheckScreen";
 import { EventNewScreen } from "./screens/EventNewScreen";
 import { EventsScreen } from "./screens/EventsScreen";
 import { HomeScreen } from "./screens/HomeScreen";
@@ -50,6 +51,14 @@ export function App() {
         element={
           <AuthedGuard>
             <EventDetailScreen />
+          </AuthedGuard>
+        }
+      />
+      <Route
+        path="/events/:eventId/inventory/:checkId"
+        element={
+          <AuthedGuard>
+            <EventInventoryCheckScreen />
           </AuthedGuard>
         }
       />

@@ -443,3 +443,6 @@ verify_jwt = true
 
 [functions.assortment-admin]
 verify_jwt = true
+
+[functions.event-inventory]
+verify_jwt = true
