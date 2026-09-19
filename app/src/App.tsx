@@ -1,5 +1,7 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { AdminGuard, AuthedGuard } from "./lib/AdminGuard";
+import { AssortmentSetDetailScreen } from "./screens/AssortmentSetDetailScreen";
+import { AssortmentSetsScreen } from "./screens/AssortmentSetsScreen";
 import { EventDetailScreen } from "./screens/EventDetailScreen";
 import { EventNewScreen } from "./screens/EventNewScreen";
 import { EventsScreen } from "./screens/EventsScreen";
@@ -88,6 +90,22 @@ export function App() {
         element={
           <AdminGuard>
             <ProductDetailScreen />
+          </AdminGuard>
+        }
+      />
+      <Route
+        path="/assortment-sets"
+        element={
+          <AdminGuard>
+            <AssortmentSetsScreen />
+          </AdminGuard>
+        }
+      />
+      <Route
+        path="/assortment-sets/:id"
+        element={
+          <AdminGuard>
+            <AssortmentSetDetailScreen />
           </AdminGuard>
         }
       />

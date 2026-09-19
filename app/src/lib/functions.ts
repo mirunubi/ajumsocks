@@ -50,3 +50,7 @@ export function callPrepAdmin(body: Record<string, unknown>) {
 export function callProductAdmin(body: Record<string, unknown>) {
   return call("product-admin", body, true);
 }
+
+export function callAssortmentAdmin(body: Record<string, unknown>) {
+  return call("assortment-admin", body, true);
+}

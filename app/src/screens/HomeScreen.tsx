@@ -155,6 +155,9 @@ export function HomeScreen() {
           <Link className="primary-link" to="/products">
             상품 관리
           </Link>
+          <Link className="primary-link" to="/assortment-sets">
+            상품구성 세트
+          </Link>
           <Link className="primary-link" to="/preparations">
             준비물 관리
           </Link>
