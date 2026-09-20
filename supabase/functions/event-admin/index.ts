@@ -51,6 +51,7 @@ Deno.serve(async (req) => {
     if (action === "update") return await requireAdmin(req, isAdmin, () => updateEvent(req, service, body));
     if (action === "set-status") return await requireAdmin(req, isAdmin, () => setStatus(req, service, body));
     if (action === "add-member") return await requireAdmin(req, isAdmin, () => addMember(req, service, callerId, body));
+    if (action === "remove-member") return await requireAdmin(req, isAdmin, () => removeMember(req, service, body));
     if (action === "add-contact") return await requireAdmin(req, isAdmin, () => addContact(req, service, body));
     if (action === "update-contact") return await requireAdmin(req, isAdmin, () => updateContact(req, service, body));
     return json(req, { error: "unknown_action" }, 400);
@@ -475,6 +476,27 @@ async function addMember(
       after?.login_allowed_from === loginBefore.login_allowed_from &&
       after?.login_allowed_until === loginBefore.login_allowed_until,
   });
+}
+
+async function removeMember(req: Request, service: ReturnType<typeof secretClient>, body: Record<string, unknown>) {
+  const event_id = text(body.event_id);
+  const profile_id = text(body.profile_id);
+  if (!event_id || !profile_id) return json(req, { error: "invalid_input" }, 400);
+
+  const { data: event } = await service.from("events").select("id").eq("id", event_id).maybeSingle();
+  if (!event) return json(req, { error: "not_found" }, 404);
+
+  const { data: existing } = await service
+    .from("event_members")
+    .select("id")
+    .eq("event_id", event_id)
+    .eq("profile_id", profile_id)
+    .maybeSingle();
+  if (!existing) return json(req, { removed: true, already_removed: true });
+
+  const { error } = await service.from("event_members").delete().eq("event_id", event_id).eq("profile_id", profile_id);
+  if (error) return json(req, { error: error.message }, 400);
+  return json(req, { removed: true, already_removed: false });
 }
 
 async function addContact(req: Request, service: ReturnType<typeof secretClient>, body: Record<string, unknown>) {

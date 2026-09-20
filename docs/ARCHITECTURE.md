@@ -195,7 +195,7 @@ Edge는 Secret Key 클라이언트(`supabase/functions/_shared/supabase.ts`)로 
 | --- | --- | --- |
 | `invite-accept` | preview / accept (JWT 없이 토큰) | 초대 수락 시 Auth 사용자 + profile 활성 |
 | `user-admin` | 없음 | ADMIN only |
-| `event-admin` | `get` = 배정 또는 ADMIN | create/update/status/member/contact = ADMIN |
+| `event-admin` | `get` = 배정 또는 ADMIN | create/update/status/add-member/remove-member/contact = ADMIN |
 | `event-photos` | 배정자 업로드 | delete = ADMIN |
 | `prep-admin` | `get-event`, `set-status` = 배정 또는 ADMIN | 템플릿·apply·snapshot 구조 변경 = ADMIN |
 | `product-admin` | `list-masters` / `list-products` / `get` = app access | 나머지 = ADMIN |

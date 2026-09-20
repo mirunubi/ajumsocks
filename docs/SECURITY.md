@@ -206,7 +206,7 @@ Table writes from the browser: **none** (GRANT SELECT + RLS SELECT policies only
 
 | Domain | STAFF / PART_TIMER (assigned) | ADMIN |
 | --- | --- | --- |
-| Event | SELECT 배정 행사 일반정보 (계약 **금액** 컬럼 제외). Photo upload via Edge. No create/update/status/member write | All events; `commission_rate` / `fixed_fee`는 Edge `event-admin` (Secret). writes via `event-admin` |
+| Event | SELECT 배정 행사 일반정보 (계약 **금액** 컬럼 제외). Photo upload via Edge. No create/update/status/member write | All events; `commission_rate` / `fixed_fee`는 Edge `event-admin` (Secret). writes via `event-admin` (`add-member` / `remove-member`) |
 | Preparation | SELECT event snapshot; `prep-admin` `get-event` / `set-status` | Templates (RLS ADMIN SELECT) + apply/structure |
 | Assortment | SELECT event snapshot; `get-event` | Templates + apply + manual SKU |
 | Inventory | SELECT checks/current of assigned events; EVENT location/positions/movements involving that EVENT; create/save/confirm/cancel check; dispatch from / receive to that EVENT | HQ/TEMP/THIRD_PARTY, adjustments, draft create, closing distribution |

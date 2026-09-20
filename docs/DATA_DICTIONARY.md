@@ -216,8 +216,8 @@ Primary Key: `id`
 Main Foreign Keys: `event_id` RESTRICT, `profile_id` RESTRICT, `created_by`
 Key Fields: `assignment_role` (MANAGER, STAFF, PART_TIMER)
 Important Constraints: UNIQUE (`event_id`, `profile_id`)
-Write Authority: Edge `event-admin` add-member (ADMIN). SELECT: 배정 또는 ADMIN
-Delete / History Policy: 행을 이력으로 유지 (comment). 배정이 RLS `can_read_event`의 기준
+Write Authority: Edge `event-admin` add-member / remove-member (ADMIN). SELECT: 배정 또는 ADMIN
+Delete / History Policy: 현재 배정만 유지. ADMIN `remove-member`는 행을 물리삭제한다. 이력 컬럼/`is_active` 없음. 재배정은 새 insert. RLS `can_read_event`는 현재 membership `exists` 기준이라 해제 즉시 접근이 끊긴다.
 Important Notes: `assignment_role`은 `profiles.role`과 독립.
 
 ## event_organizer_contacts

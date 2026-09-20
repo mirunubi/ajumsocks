@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Link, useParams } from "react-router-dom";
 import type { Profile } from "../lib/access";
-import { formatKstDateTime, formatKstRange, kstHm, scheduleHint } from "../lib/datetime";
+import { combineKstDateTime, formatKstDateTime, formatKstRange, kstHm, scheduleHint, splitKstDateTime } from "../lib/datetime";
 import {
   ASSIGNMENT_LABEL,
   CONTACT_LABEL,
@@ -18,8 +18,10 @@ import {
   type EventRecord,
   type EventStatus,
 } from "../lib/events";
-import { callEventAdmin, callEventPhotos, callUserAdmin } from "../lib/functions";
+import { callEventAdmin, callEventPhotos, callOrganizerAdmin, callUserAdmin } from "../lib/functions";
+import type { Organizer } from "../lib/organizers";
 import { EventAssortmentPanel } from "./EventAssortmentPanel";
+import { EventBasicsFields, type EventBasicsValue } from "./EventBasicsFields";
 import { EventFinancePanel } from "./EventFinancePanel";
 import { EventInventoryPanel } from "./EventInventoryPanel";
 import { EventPrepPanel } from "./EventPrepPanel";
@@ -63,6 +65,9 @@ export function EventDetailScreen() {
   });
   const [busy, setBusy] = useState(false);
   const [tab, setTab] = useState<Tab>("info");
+  const [editing, setEditing] = useState(false);
+  const [editForm, setEditForm] = useState<EventBasicsValue | null>(null);
+  const [organizers, setOrganizers] = useState<Organizer[]>([]);
 
   const refresh = useCallback(async () => {
     const result = await callEventAdmin({ action: "get", id });
@@ -81,12 +86,84 @@ export function EventDetailScreen() {
     void callUserAdmin({ action: "list" })
       .then((result) => setUsers(result.users as Profile[]))
       .catch((error: Error) => setMessage(error.message));
+    void callOrganizerAdmin({ action: "list" })
+      .then((result) => setOrganizers((result.organizers ?? []) as Organizer[]))
+      .catch((error: Error) => setMessage(error.message));
   }, [isAdmin]);
 
   async function flashCopy(label: string, value: string) {
     await copyText(value);
     setCopied(label);
     window.setTimeout(() => setCopied(null), 1500);
+  }
+
+  function startEdit(event: EventRecord) {
+    const start = splitKstDateTime(event.starts_at);
+    const end = splitKstDateTime(event.ends_at);
+    setEditForm({
+      name: event.name,
+      organizer_id: event.organizer_id ?? "",
+      venue_name: event.venue_name,
+      address: event.address,
+      address_detail: event.address_detail ?? "",
+      start_date: start.date,
+      start_time: start.time,
+      end_date: end.date,
+      end_time: end.time,
+      memo: event.memo ?? "",
+      contract_type: event.contract_type,
+      commission_rate: event.commission_rate == null ? "" : String(event.commission_rate),
+      fixed_fee: event.fixed_fee == null ? "" : String(event.fixed_fee),
+      contract_memo: event.contract_memo ?? "",
+    });
+    setEditing(true);
+  }
+
+  async function onSaveEdit(event: FormEvent) {
+    event.preventDefault();
+    if (!editForm) return;
+    setBusy(true);
+    setMessage(null);
+    try {
+      await callEventAdmin({
+        action: "update",
+        id,
+        name: editForm.name,
+        organizer_id: editForm.organizer_id || null,
+        venue_name: editForm.venue_name,
+        address: editForm.address,
+        address_detail: editForm.address_detail,
+        starts_at: combineKstDateTime(editForm.start_date, editForm.start_time),
+        ends_at: combineKstDateTime(editForm.end_date, editForm.end_time),
+        memo: editForm.memo,
+        contract_type: editForm.contract_type,
+        commission_rate: editForm.commission_rate === "" ? null : Number(editForm.commission_rate),
+        fixed_fee: editForm.fixed_fee === "" ? null : Number(editForm.fixed_fee),
+        contract_memo: editForm.contract_memo,
+      });
+      setEditing(false);
+      setEditForm(null);
+      await refresh();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "수정 실패");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onRemoveMember(member: EventMember) {
+    const name = member.display_name || "이 사용자";
+    if (!window.confirm(`${name}님을 이 행사에서 해제하시겠습니까?`)) return;
+    setBusy(true);
+    setMessage(null);
+    try {
+      await callEventAdmin({ action: "remove-member", event_id: id, profile_id: member.profile_id });
+      await refresh();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "해제 실패");
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function onAssign(event: FormEvent) {
@@ -213,6 +290,17 @@ export function EventDetailScreen() {
     ...members.filter((row) => row.phone).map((row) => ({ label: row.display_name || "담당", phone: row.phone as string })),
   ];
   const assignedIds = new Set(members.map((row) => row.profile_id));
+  const organizerOptions = organizers.slice();
+  if (organizer && !organizerOptions.some((row) => row.id === organizer.id)) {
+    organizerOptions.unshift({
+      id: organizer.id,
+      name: organizer.name,
+      calendar_color: organizer.calendar_color,
+      is_active: organizer.is_active,
+    });
+  }
+  const memberGroups: AssignmentRole[] = ["STAFF", "PART_TIMER", "MANAGER"];
+
 
   return (
     <div className="app-shell">
@@ -249,6 +337,40 @@ export function EventDetailScreen() {
 
       {tab === "info" ? (
         <>
+      {isAdmin && editing && editForm ? (
+        <form className="card" onSubmit={(event) => void onSaveEdit(event)}>
+          <h2 className="section-title tight">행사정보 수정</h2>
+          <EventBasicsFields
+            form={editForm}
+            organizers={organizerOptions}
+            onChange={(patch) => setEditForm((prev) => (prev ? { ...prev, ...patch } : prev))}
+            organizerHint={
+              editForm.organizer_id !== (event.organizer_id ?? "") ? (
+                <p className="muted">
+                  주최자를 변경합니다. 현재 행사 계약조건과 담당자 정보는 기존 Snapshot을 유지합니다.
+                </p>
+              ) : (
+                <p className="muted">주최자만 바꿔도 계약 Snapshot과 담당자 Snapshot은 자동으로 바뀌지 않습니다.</p>
+              )
+            }
+          />
+          <div className="btn-row">
+            <button className="secondary" type="button" disabled={busy} onClick={() => { setEditing(false); setEditForm(null); }}>
+              취소
+            </button>
+            <button type="submit" disabled={busy}>
+              {busy ? "저장 중..." : "저장"}
+            </button>
+          </div>
+        </form>
+      ) : null}
+
+      {isAdmin && !editing ? (
+        <button type="button" className="secondary" disabled={busy} onClick={() => startEdit(event)}>
+          행사정보 수정
+        </button>
+      ) : null}
+
       <section className="card">
         <div className="muted">기간</div>
         <div>
@@ -315,13 +437,26 @@ export function EventDetailScreen() {
       <section className="card">
         <h2 className="section-title tight">내부 담당자</h2>
         {members.length === 0 ? <p className="muted">아직 배정된 사람이 없습니다.</p> : null}
-        {members.map((member) => (
-          <div className="stack-row" key={member.id}>
-            <strong>{member.display_name}</strong>
-            <span className="badge">{ASSIGNMENT_LABEL[member.assignment_role]}</span>
-            {member.phone ? <span>{formatE164Display(member.phone)}</span> : null}
-          </div>
-        ))}
+        {memberGroups.map((role) => {
+          const rows = members.filter((member) => member.assignment_role === role);
+          if (rows.length === 0) return null;
+          return (
+            <div key={role}>
+              <div className="muted">{ASSIGNMENT_LABEL[role]}</div>
+              {rows.map((member) => (
+                <div className="stack-row" key={member.id}>
+                  <strong>{member.display_name}</strong>
+                  {member.phone ? <span>{formatE164Display(member.phone)}</span> : null}
+                  {isAdmin ? (
+                    <button type="button" className="tiny danger" disabled={busy} onClick={() => void onRemoveMember(member)}>
+                      해제
+                    </button>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          );
+        })}
       </section>
 
       <section className="card">

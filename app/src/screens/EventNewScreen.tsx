@@ -1,10 +1,11 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { combineKstDateTime } from "../lib/datetime";
-import { CONTRACT_LABEL, type ContractType, type EventStatus } from "../lib/events";
+import { type ContractType, type EventStatus } from "../lib/events";
 import { callEventAdmin, callOrganizerAdmin } from "../lib/functions";
 import type { Organizer, OrganizerContact, OrganizerTerms } from "../lib/organizers";
 import { AdminChrome } from "./AdminChrome";
+import { EventBasicsFields } from "./EventBasicsFields";
 
 export function EventNewScreen() {
   const navigate = useNavigate();
@@ -96,78 +97,17 @@ export function EventNewScreen() {
     }
   }
 
-  const showRate = form.contract_type === "COMMISSION" || form.contract_type === "MIXED";
-  const showFee = form.contract_type === "FIXED_FEE" || form.contract_type === "MIXED";
-
   return (
     <AdminChrome title="행사 만들기">
       <Link to="/admin">← 일정</Link>
       <form className="card" onSubmit={(event) => void onSubmit(event)}>
-        <label>행사명</label>
-        <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
-        <label>주최자</label>
-        <select value={form.organizer_id} onChange={(e) => void onOrganizer(e.target.value)} required>
-          <option value="">주최자 선택</option>
-          {organizers.map((org) => (
-            <option key={org.id} value={org.id}>
-              {org.name}
-            </option>
-          ))}
-        </select>
-        <label>행사장명</label>
-        <input value={form.venue_name} onChange={(e) => setForm({ ...form, venue_name: e.target.value })} required />
-        <label>주소</label>
-        <input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} required />
-        <label>상세주소</label>
-        <input value={form.address_detail} onChange={(e) => setForm({ ...form, address_detail: e.target.value })} />
-        <div className="filters">
-          <div>
-            <label>시작일</label>
-            <input type="date" value={form.start_date} onChange={(e) => setForm({ ...form, start_date: e.target.value })} required />
-          </div>
-          <div>
-            <label>시작시간</label>
-            <input type="time" value={form.start_time} onChange={(e) => setForm({ ...form, start_time: e.target.value })} required />
-          </div>
-          <div>
-            <label>종료일</label>
-            <input type="date" value={form.end_date} onChange={(e) => setForm({ ...form, end_date: e.target.value })} required />
-          </div>
-          <div>
-            <label>종료시간</label>
-            <input type="time" value={form.end_time} onChange={(e) => setForm({ ...form, end_time: e.target.value })} required />
-          </div>
-        </div>
-        <label>매대 계약 (이번 행사 Snapshot)</label>
-        <select value={form.contract_type} onChange={(e) => setForm({ ...form, contract_type: e.target.value as ContractType })}>
-          {(Object.keys(CONTRACT_LABEL) as ContractType[]).map((key) => (
-            <option key={key} value={key}>
-              {CONTRACT_LABEL[key]}
-            </option>
-          ))}
-        </select>
-        {showRate ? (
-          <>
-            <label>수수료 (%)</label>
-            <input
-              type="number"
-              min={0}
-              max={100}
-              step="0.01"
-              value={form.commission_rate}
-              onChange={(e) => setForm({ ...form, commission_rate: e.target.value })}
-              required
-            />
-          </>
-        ) : null}
-        {showFee ? (
-          <>
-            <label>입점비 (원)</label>
-            <input type="number" min={0} step="1" value={form.fixed_fee} onChange={(e) => setForm({ ...form, fixed_fee: e.target.value })} required />
-          </>
-        ) : null}
-        <label>계약 메모</label>
-        <textarea value={form.contract_memo} onChange={(e) => setForm({ ...form, contract_memo: e.target.value })} />
+        <EventBasicsFields
+          form={form}
+          organizers={organizers}
+          organizerRequired
+          onChange={(patch) => setForm((prev) => ({ ...prev, ...patch }))}
+          onOrganizerChange={(id) => void onOrganizer(id)}
+        />
         {contacts.length > 0 ? (
           <>
             <h2 className="section-title">주최자 담당자 복사</h2>
@@ -185,8 +125,6 @@ export function EventNewScreen() {
             ))}
           </>
         ) : null}
-        <label>행사 메모</label>
-        <textarea value={form.memo} onChange={(e) => setForm({ ...form, memo: e.target.value })} />
         {message ? <div className="error">{message}</div> : null}
         <button type="submit" disabled={busy}>
           {busy ? "저장 중..." : "행사 만들기"}

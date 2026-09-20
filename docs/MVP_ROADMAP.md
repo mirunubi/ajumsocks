@@ -181,8 +181,8 @@ STAFF/PART_TIMER는 자신에게 배정된 행사에서 허용된 현장업무�
 | --- | --- | --- | --- | --- | --- | --- |
 | G-01 | Auth / User | READY | 관리자/현장 로그인, Role Home, MASTER, login window, signup OFF | 없음 | 아니오 | — |
 | G-02 | Organizer | READY | Master, 색상, Terms/Contact, 생성 시 Snapshot, 비활성 유지 | 없음 | 아니오 | — |
-| G-03 | Event | READY | 등록, 기간/시간, 배정, 상세, 상태 전이 | 없음 (생성 경로) | 아니오 | — |
-| G-04 | Event | PARTIAL | `event-admin` `update`는 있음. UI는 생성 후 행사명/기간/장소/Organizer를 고치지 못함 | 오타·시간 수정 시 취소 후 재생성에 의존 | 아니오 (첫 입력이 맞으면 운영 가능) | P1 |
+| G-03 | Event | READY | 등록, 기간/시간, 배정·해제, 상세, 상태 전이 | 없음 (생성 경로) | 아니오 | — |
+| G-04 | Event | READY | 생성 후 행사명/장소/주소/기간/Organizer/이번 행사 계약 수정 UI. `event-admin` `update`. Organizer 변경 시 Contract/Contact Snapshot 유지 | 없음 | 아니오 | — |
 | G-05 | Event | PARTIAL | 기존 `organizer_id` NULL 행사는 미지정으로 표시 | 상세에서 Organizer 연결 UI 없음 | 아니오 (새 행사는 Organizer 필수) | P2 |
 | G-06 | Event | PARTIAL | 상세 탭(정보/준비/재고/매출·지출)은 있음. 현장 카드에 준비·매출 요약을 일부 표시 | 상세 상단 운영 Summary(준비 완료, SKU 수, 최근 실사, 인원, 오늘 매출)가 한곳에 없음 | 아니오 | P2 |
 | G-07 | Calendar | READY | 월간, 다일 bar, Organizer 색/필터, 모바일은 선택일 목록 | 없음 (1~3회 Pilot 밀도) | 아니오 | — |
@@ -190,7 +190,7 @@ STAFF/PART_TIMER는 자신에게 배정된 행사에서 허용된 현장업무�
 | G-09 | Preparation | READY | 마스터/세트/Snapshot, 준비·현장·회수 상태, 행사준비 탭 | 없음 | 아니오 | — |
 | G-10 | Product / Assortment | READY | Product/SKU, 분류, Event Snapshot, 판매상품 섹션 | 없음 | 아니오 | — |
 | G-11 | Inventory | READY | OPENING/ROUTINE/CLOSING, Position, Movement, Closing Distribution | 없음 (권한 정책 포함) | 아니오 | — |
-| G-12 | Inventory | PARTIAL | 실사 화면 + 검색. 배정 STAFF가 Check 수행 가능 | 모바일에서 SKU가 많은 FULL 실사는 입력이 길다 | 아니오 (기능은 됨, 현장 실수 위험) | P1 |
+| G-12 | Inventory | READY | 실사 화면 + 검색. 저장 후 다음은 line/`variant_id` 기준이라 `미입력만`에서 SKU skip 없음 | 100+ SKU는 여전히 입력이 길다 (P2 밀도) | 아니오 | — |
 | G-13 | Finance | READY | 일매출, 지출/영수증, 원가 수동, 수수료/입점비 Snapshot, 손익, ENDED/SETTLED. STAFF는 계약금액·손익 차단 | 없음 | 아니오 | — |
 | G-14 | Field UX | PARTIAL | `/my-events`, 배정 행사만, PART_TIMER 제목만 단순화 | PART_TIMER 화면이 STAFF와 거의 동일 | 아니오 | P2 |
 | G-15 | Photos | PARTIAL | 행사 사진 업로드/조회 | 전용 Camera UX 없음 (파일 선택) | 아니오 | P2 |
@@ -367,8 +367,8 @@ Phase 9 후보 (상세 설계하지 않음):
 | Phase 0~8.5 | COMPLETE |
 | MVP 운영개선 01 | COMPLETE |
 | Web MVP Gap Check | COMPLETE — `docs/MVP_GAP_CHECK.md` |
-| Web MVP Gap Fix | PENDING |
-| Real Event Pilot | PENDING |
+| Web MVP Gap Fix | COMPLETE |
+| Real Event Pilot | NEXT |
 | Web MVP Freeze | PENDING |
 | Android v1 | PENDING |
 | Android Pilot | PENDING |

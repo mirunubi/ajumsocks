@@ -2,7 +2,7 @@
 
 Audit of **implemented** Web MVP v1.0 against `docs/MVP_ROADMAP.md` End-to-End Scenario.
 
-This document does **not** add features. Gap Fix is a later step. Phase 9 is not started.
+P1 Gap Fix (`P1-03` → `P1-02` → `P1-01`) is applied. Phase 9 is not started.
 
 Source of Truth for scope: `docs/MVP_ROADMAP.md`.
 
@@ -12,9 +12,9 @@ Source of Truth for scope: `docs/MVP_ROADMAP.md`.
 
 | Field | Value |
 | --- | --- |
-| Audit baseline | `3125e72` (`docs: define MVP roadmap and completion criteria`) |
-| Feature baseline | `a6c253a` (Phase 0~8.5 + MVP 운영개선 01) |
-| Included | Phase 0~8.5, MVP 운영개선 01, MVP_ROADMAP |
+| Audit baseline | `7a44625` (`docs: audit web MVP pilot readiness`) |
+| Feature baseline | `a6c253a` + this P1 Gap Fix |
+| Included | Phase 0~8.5, MVP 운영개선 01, MVP_ROADMAP, P1-01/02/03 |
 | Phase 9 | NOT STARTED |
 
 Core questions:
@@ -29,20 +29,20 @@ Core questions:
 | Priority | Count |
 | --- | --- |
 | P0 | 0 |
-| P1 | 3 |
+| P1 | 0 |
 | P2 | 8 |
 
 | Classification (scenario steps) | Count |
 | --- | --- |
-| READY | 26 |
-| PARTIAL | 1 |
+| READY | 27 |
+| PARTIAL | 0 |
 | MISSING | 0 |
 
-ADMIN 19 steps: **19 READY**. STAFF/PART_TIMER 8 steps: **7 READY, 1 PARTIAL** (재고실사 UX). **MISSING: 0.**
+ADMIN 19 steps: **19 READY**. STAFF/PART_TIMER 8 steps: **8 READY**. **MISSING: 0.**
 
-**Pilot Readiness: READY AFTER P1 FIX**
+**Pilot Readiness: READY FOR PILOT**
 
-근거: 핵심 업무 경로(로그인, 행사 생성, Snapshot, 배정, 준비/상품, 실사, 이동, 매출/비용, 종료/정산)는 코드·권한·자동검증이 있다. P0/MISSING이 없어 운영 흐름 자체는 끊기지 않는다. 다만 Pilot 전 권장 P1 3건(행사 헤더 수정 UI 없음, 배정 해제 불가, 실사 `미입력만`+저장 후 다음이 SKU를 건너뛸 수 있음)이 현장 오류·우회(DB 직접 수정)를 만든다. Roadmap Pilot 진입조건의 “주요 P1 해결”에 해당한다. Wishlist(Supplier, Native, Push)로 판정을 낮추지 않았다.
+근거: 핵심 업무 경로와 P1 3건(행사 헤더 수정 UI, 배정 해제, 실사 SKU skip)이 코드·권한·`verify:pilot-gaps`로 닫혔다. P0/P1/MISSING = 0. P2(상세 Summary, Calendar 밀도, PART_TIMER 단순화, Contact 편집, 사진 capture 등)는 Pilot을 막지 않는다. Wishlist(Supplier, Native, Push)로 판정을 낮추지 않았다.
 
 ---
 
@@ -80,8 +80,8 @@ ADMIN 19 steps: **19 READY**. STAFF/PART_TIMER 8 steps: **7 READY, 1 PARTIAL** (
 - **Current:** 화면에서 시작일/시간·종료일/시간 분리, 저장 시 KST `timestamptz`. 행사장명·주소.
 - **Route / Screen:** `EventNewScreen`
 - **Backend:** `starts_at` / `ends_at` 유지 (분해하지 않음)
-- **Operational Gap:** **생성 후 수정 UI는 없음** (별도 P1-01). 이 Step의 *등록*은 가능.
-- **Evidence:** `app/src/lib/datetime.ts` `combineKstDateTime`; `event-admin` `update`는 있으나 UI 미연결
+- **Operational Gap:** 없음. 생성 후 수정은 P1-01 (`행사정보 수정` → `event-admin` `update`).
+- **Evidence:** `app/src/lib/datetime.ts` `combineKstDateTime`; `EventDetailScreen` 행사정보 수정; `verify:pilot-gaps` P1-01
 
 ### 5. 계약조건 Snapshot — READY
 
@@ -94,14 +94,13 @@ ADMIN 19 steps: **19 READY**. STAFF/PART_TIMER 8 steps: **7 READY, 1 PARTIAL** (
 - **Current:** 생성 시 선택한 Organizer Contact를 `event_contacts`로 복사. Master 이후 변경은 기존 행사 불변.
 - **Evidence:** `verify:organizers` 13, 14; `copyOrganizerContacts`
 
-### 7. 직원/알바 배정 — READY (배정) / CRUD Gap P1-02
+### 7. 직원/알바 배정 — READY
 
-- **Current:** 상세에서 사용자+assignment_role 추가. Unique `(event_id, profile_id)`. 로그인 기간 자동변경 없음.
+- **Current:** 상세에서 사용자+assignment_role 추가. Unique `(event_id, profile_id)`. 로그인 기간 자동변경 없음. ADMIN `[해제]` + confirm. 물리삭제.
 - **Route / Screen:** `EventDetailScreen` 인력 배정
-- **Backend:** `event-admin` `add-member` only. **remove-member 없음.**
-- **Operational Gap:** 오배정·중도하차 시 UI/API로 해제 불가 → DB 직접 수정. Scenario의 *배정*은 가능.
-- **Priority:** P1-02 (CRUD)
-- **Evidence:** `supabase/functions/event-admin/index.ts` actions; `event_members_unique`
+- **Backend:** `event-admin` `add-member` / `remove-member`. STAFF/PART_TIMER 403. 중복 remove idempotent.
+- **Operational Gap:** 없음
+- **Evidence:** `verify:pilot-gaps` P1-02; 해제 후 RLS/`can_read_event` 차단
 
 ### 8. 준비물 설정 — READY
 
@@ -132,11 +131,11 @@ ADMIN 19 steps: **19 READY**. STAFF/PART_TIMER 8 steps: **7 READY, 1 PARTIAL** (
 - **Backend:** `inventory-movement` + RPC. 음수 Position 거부, 이중 DISPATCH 거부.
 - **Evidence:** `verify:phase7`; `verify:e2e` 이동
 
-### 12. 행사 중 재고 확인 — READY (기능) / P1-03 UX
+### 12. 행사 중 재고 확인 — READY
 
-- **Current:** ROUTINE Check. 검색, Category/Size/Color, `미입력만`, 분류 그룹, `저장 후 다음`.
-- **Operational Gap:** 기본 `onlyOpen=true`일 때 저장 후 `index+1`이 다음 미입력 SKU를 **건너뛸 수 있음** (P1-03). 기능 부재는 아님.
-- **Evidence:** `EventInventoryCheckScreen.tsx` `onlyOpen` default, `save()`; `verify:phase6` ROUTINE
+- **Current:** ROUTINE Check. 검색, Category/Size/Color, `미입력만`, 분류 그룹, `저장 후 다음`. 저장 후 다음 SKU는 line id 기준.
+- **Operational Gap:** 없음. P1-03 skip 수정됨.
+- **Evidence:** `EventInventoryCheckScreen.tsx` `nextOpenInventoryItem`; `verify:pilot-gaps` P1-03
 
 ### 13. 매출 입력 — READY
 
@@ -208,12 +207,12 @@ ADMIN 19 steps: **19 READY**. STAFF/PART_TIMER 8 steps: **7 READY, 1 PARTIAL** (
 - **Current:** 행사준비 탭. 상태 버튼은 배정 사용자 `set-status`. 세트 적용/수량/제외는 ADMIN.
 - **Evidence:** `EventPrepPanel`; `verify:phase3` 배정 STAFF/PART_TIMER 조회·상태변경
 
-### 5. 허용된 재고실사 — PARTIAL (둘 다)
+### 5. 허용된 재고실사 — READY (둘 다)
 
-- **Current:** 배정 행사 Check 시작/저장/확정 가능. 검색·분류 필터·미입력만·저장 후 다음 있음.
-- **Gap:** P1-03. 100+ SKU에서 기본 `미입력만`+`저장 후 다음`이 항목을 건너뛸 수 있음. 우회: `미입력만` 해제.
+- **Current:** 배정 행사 Check 시작/저장/확정 가능. 검색·분류 필터·미입력만·저장 후 다음 있음. 저장 후 다음 SKU skip 없음.
+- **Gap:** 없음 (P1-03 수정). 100+ SKU 길이 자체는 P2 밀도.
 - **PART_TIMER:** 동일 화면. 더 단순한 전용 실사 UI 없음 (P2-04).
-- **Evidence:** `EventInventoryCheckScreen.tsx` 29, 82–94, 151–180; `verify:phase6` 배정 STAFF Confirm
+- **Evidence:** `EventInventoryCheckScreen.tsx` `currentId` + `nextOpenInventoryItem`; `verify:pilot-gaps` P1-03
 
 ### 6. 허용된 이동업무 — READY (둘 다)
 
@@ -245,14 +244,14 @@ ADMIN 19 steps: **19 READY**. STAFF/PART_TIMER 8 steps: **7 READY, 1 PARTIAL** (
 | 내 행사 | Yes | 카드, 가로스크롤 없음 | READY |
 | 행사 상세 | Yes | 탭 chip wrap | READY |
 | 행사준비 | Yes | 상태 버튼 행 | READY |
-| 재고실사 | Yes, with risk | 검색/필터 있음. 긴 목록+P1-03 | PARTIAL P1 |
+| 재고실사 | Yes | 검색/필터, 저장 후 다음 SKU skip 없음 | READY |
 | 이동 | Yes | 목록/상세 카드 | READY |
 | 매출 | Yes | 일별 chip, 금액 입력 | READY |
 | 비용 | Yes | 영수증 카메라 속성 있음 | READY |
 | 행사 사진 | Yes | `input file` only, `capture` 없음 | PARTIAL P2 |
 | 관리자 Calendar | 보완됨 | bar 숨김, 선택일 목록 | READY / P2 밀도 |
 
-단순 미관은 P2. 실사 건너뛰기 위험은 반복 작업을 방해하므로 P1.
+단순 미관은 P2. 실사 skip은 P1-03에서 수정했다.
 
 이번 세션 390px: PART_TIMER `/my-events` 카드 확인. 동시 verify가 DB를 바꿔 상세가 `unauthorized`가 된 것은 **감사 중 레이스**이지 제품 Gap이 아니다. STAFF 상세·계약 미노출은 이전 브라우저 확인을 증거로 유지한다.
 
@@ -260,29 +259,25 @@ ADMIN 19 steps: **19 READY**. STAFF/PART_TIMER 8 steps: **7 READY, 1 PARTIAL** (
 
 ## Candidate re-check (Roadmap A / B)
 
-### A. 행사 헤더/기본정보 수정 UX — PARTIAL / P1-01
+### A. 행사 헤더/기본정보 수정 UX — READY (P1-01)
 
-재확인 결과: **READY가 아님.**
+재확인 결과: **READY.**
 
 | Field | Create UI | Update API | Update UI |
 | --- | --- | --- | --- |
-| 행사명, 장소, 주소, 날짜/시간 | `/events/new` | `event-admin` `update` | **없음** |
-| Organizer | 신규 필수 | `update` `organizer_id` | **없음** (미지정 잔존 행사 연결 불가) |
-| 이번 행사 계약 금액 | 생성 시 Snapshot | `update` 계약 필드 | **없음** |
-| Event Contact | 생성 Snapshot + 추가 | `update-contact` | **추가만** |
-| 내부 배정 | 추가 | add only | **해제 없음** (P1-02) |
+| 행사명, 장소, 주소, 날짜/시간 | `/events/new` | `event-admin` `update` | 상세 `행사정보 수정` (`EventBasicsFields`) |
+| Organizer | 신규 필수 | `update` `organizer_id` | 동일 폼. Snapshot 자동 교체 없음 |
+| 이번 행사 계약 금액 | 생성 시 Snapshot | `update` 계약 필드 | ADMIN만. Organizer Master Terms ≠ Event Snapshot |
+| Event Contact | 생성 Snapshot + 추가 | `update-contact` | **추가만** (P2-05) |
+| 내부 배정 | 추가 | add/remove-member | `[해제]` + confirm (P1-02) |
 
-우회: 행사 취소 후 재생성. 이미 실사/매출이 있으면 운영 중단 수준 우회. DB 직접 수정이 아니면 헤더를 고칠 수 없다 → Gap 기준 YES.
+Organizer 변경 시 계약/담당자 Snapshot은 유지. 자동 재-Snapshot은 P2.
 
-### B. 모바일 재고실사 100+ SKU — PARTIAL / P1-03
+### B. 모바일 재고실사 100+ SKU — READY for skip (P1-03)
 
-재확인 결과: Roadmap이 우려한 **검색/Category 부재는 사실이 아님.**
+검색/Category는 원래 있었다. skip 버그(`onlyOpen` + `index+1`)는 `nextOpenInventoryItem` + `currentId`로 수정. 기본 필터 `미입력만`에서 A→B→C, 부분입력에서도 B를 건너뛰지 않는다 (`verify:pilot-gaps`).
 
-있음: 검색, Category/Size/Color, `미입력만`, 분류 그룹, `저장 후 다음`, 미입력 카운트, 마지막 저장 시각, ZERO vs 미입력(`remainder`/`full_pack_count`).
-
-남음: 기본 `onlyOpen=true`에서 `save()`가 `refresh()` 후 `setIndex(i+1)`를 해, 방금 저장한 행이 필터에서 빠지면 **다음 미입력 한 건을 건너뜀**. 100+ FULL 실사에서 누락 Confirm 실패 또는 잘못된 건너뛰기. 우회: `미입력만` 해제 (목록이 더 길어짐).
-
-새 기능은 구현하지 않음.
+100+ SKU 입력 길이는 P2 밀도. 새 기능(정확수량)은 넣지 않음.
 
 ---
 
@@ -292,14 +287,14 @@ ADMIN 19 steps: **19 READY**. STAFF/PART_TIMER 8 steps: **7 READY, 1 PARTIAL** (
 
 | Change | Likely in ops? | App path | Gap? |
 | --- | --- | --- | --- |
-| 행사 날짜/시간/장소 | 높음 | 없음 (API만) | **P1-01** |
-| 알바 교체(해제) | 높음 | 없음 (API도 없음) | **P1-02** |
+| 행사 날짜/시간/장소 | 높음 | 상세 `행사정보 수정` | 없음 (P1-01) |
+| 알바 교체(해제) | 높음 | 상세 `[해제]` | 없음 (P1-02) |
 | 알바 추가 | 높음 | 상세 배정 | 없음 |
 | Organizer Master 담당자 | 중간 | 추가+비활성화 | 없음 (편집 UI는 P2-06) |
 | 행사 당시 Contact 전화번호 | 중간 | 새 Contact 추가 | P2-05 |
 | 준비 수량/항목 | 높음 | 행사준비 ADMIN | 없음 |
 | 판매상품 추가/제외 | 높음 | Assortment 패널 | 없음 |
-| 이번 행사 수수료 정정 | 낮음~중간 | API만 | P1-01에 포함 |
+| 이번 행사 수수료 정정 | 낮음~중간 | 상세 행사정보 수정 (Event Snapshot만) | 없음 (P1-01) |
 | Organizer 기본 Terms | 낮음 | 주최자 상세 (기존 행사 불변) | 없음 |
 
 ---
@@ -364,12 +359,13 @@ Login UX 분리는 Auth 정책을 바꾸지 않음 (D-021).
 
 ---
 
-## Automated verification (this audit)
+## Automated verification (Gap Fix)
 
-Local reset + provision, then scripts. **No code change.**
+Local scripts. Schema migration 없음.
 
 | Script | Result |
 | --- | --- |
+| `npm run verify:pilot-gaps` | PASS (P1-01/02/03) |
 | `npm run verify:organizers` | PASS |
 | `verify:phase0` … `verify:phase8` | ALL PASS |
 | `npm run verify:e2e` | PASS (Phase 8.5) |
@@ -381,26 +377,23 @@ Local reset + provision, then scripts. **No code change.**
 
 ## P1 / P2 catalog
 
-### P1-01 행사 헤더·계약 수정 UI 없음
+### P1-01 행사 헤더·계약 수정 UI — FIXED
 
 - Domain: Event
-- Status: PARTIAL
-- 운영 차단: 아니오 (첫 입력이 맞으면 진행 가능)
-- **Minimal Fix:** `/events/:id` ADMIN 편집 폼을 기존 `event-admin` `update`에 연결 (name, venue, address, KST date/time, organizer_id, 이번 행사 계약). Do not implement in this step.
+- Status: READY
+- **Fix:** `/events/:id` ADMIN `행사정보 수정` → 기존 `event-admin` `update`. Organizer 변경 시 Contract/Contact Snapshot 유지. STAFF/PART_TIMER 403.
 
-### P1-02 행사 멤버 해제 없음
+### P1-02 행사 멤버 해제 — FIXED
 
 - Domain: Event
-- Status: PARTIAL (시나리오 배정 Step은 READY)
-- 운영 차단: 아니오. 오배정 시 해당 사용자가 계속 행사 SELECT/실사/매출 가능.
-- **Minimal Fix:** ADMIN `unassign-member` (물리삭제 대신 이력 정책이 필요하면 `removed_at`). API+UI. Do not implement in this step.
+- Status: READY
+- **Fix:** ADMIN `event-admin` `remove-member` 물리삭제. UI `[해제]` + confirm. 중복 remove idempotent. 해제 후 `can_read_event` 즉시 차단.
 
-### P1-03 실사 `미입력만` + 저장 후 다음 건너뛰기
+### P1-03 실사 `미입력만` + 저장 후 다음 건너뛰기 — FIXED
 
 - Domain: Inventory
-- Status: PARTIAL
-- 운영 차단: 아니오. FULL Confirm이 미입력에서 막을 수는 있음. 잘못된 인덱스면 작업 속도·누락 위험.
-- **Minimal Fix:** `onlyOpen`일 때 저장 후 index를 `+1`하지 않고 필터된 목록의 다음 미입력(동일 index 0)을 유지. Do not implement in this step.
+- Status: READY
+- **Fix:** `nextOpenInventoryItem` + stable `currentId`. array index를 다음 식별자로 쓰지 않음. remainder 밴드 유지.
 
 ### P2
 
@@ -434,11 +427,7 @@ Phase 9 요구는 여기서 설계하지 않음.
 
 ## Recommended Gap Fix order
 
-아직 구현하지 않음.
-
-1. **P1-03** 실사 인덱스 — 진행 중 데이터 누락 위험, 수정 범위 작음
-2. **P1-02** 멤버 해제 — 권한 잔존
-3. **P1-01** 헤더 편집 — 이미 있는 `update`에 UI만
+P1 구현 완료 (`P1-03` → `P1-02` → `P1-01`).
 
 그다음 P2는 Pilot 중 실제 빈도에 따라.
 
@@ -446,20 +435,21 @@ Phase 9 요구는 여기서 설계하지 않음.
 
 ## Web MVP Gap Check Conclusion
 
-P0: **0**  
+P0: **0**
+P1: **0**
 MISSING: **0**
+P2: **8** (Pilot을 막지 않음)
 
 Pilot blocking issue (운영 흐름 단절) **없음.**
 
-Pilot 전에 수정 권장:
+P1 3건은 Gap Fix에서 수정:
 
-- P1-03 실사 `미입력만` + 저장 후 다음 건너뛰기
-- P1-02 행사 멤버 해제 없음
-- P1-01 행사 헤더/날짜/Organizer/이번 행사 계약 수정 UI 없음
+- P1-03 실사 skip → `nextOpenInventoryItem`
+- P1-02 멤버 해제 → `remove-member` DELETE
+- P1-01 행사 헤더/계약 수정 UI → `EventBasicsFields` + `update`
 
 P2는 Pilot 이후 실제 운영 피드백을 보고 판단.
 
-Phase 9는 시작하지 않음.  
-Gap Fix / Schema / UI / Edge / RLS 변경은 이 문서 작업에서 하지 않음.
+Phase 9는 시작하지 않음. Schema 변경 없음 (43 tables / 101 FKs / 7 enums).
 
-**Pilot Readiness: READY AFTER P1 FIX**
+**Pilot Readiness: READY FOR PILOT**

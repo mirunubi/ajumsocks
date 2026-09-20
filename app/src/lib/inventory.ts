@@ -72,6 +72,44 @@ export type InventoryLine = {
   operational_estimated_qty?: number | null;
 };
 
+export type InventoryLineFilter = {
+  onlyOpen: boolean;
+  query?: string;
+  category?: string;
+  size?: string;
+  color?: string;
+};
+
+export function isInventoryLineOpen(item: Pick<InventoryLine, "full_pack_count">) {
+  return item.full_pack_count == null;
+}
+
+export function filterInventoryLines<T extends InventoryLine>(items: T[], filter: InventoryLineFilter): T[] {
+  const q = (filter.query ?? "").trim().toLowerCase();
+  return items.filter((item) => {
+    if (filter.onlyOpen && !isInventoryLineOpen(item)) return false;
+    if (filter.category && (item.category_name || "미분류") !== filter.category) return false;
+    if (filter.size && item.size_name !== filter.size) return false;
+    if (filter.color && item.color_name !== filter.color) return false;
+    if (!q) return true;
+    return (
+      item.product_name.toLowerCase().includes(q) ||
+      item.product_code.toLowerCase().includes(q) ||
+      item.sku_code.toLowerCase().includes(q)
+    );
+  });
+}
+
+/** After saving `savedId`, pick the next SKU. Never uses array index arithmetic on the pre-save list. */
+export function nextOpenInventoryItem<T extends InventoryLine>(items: T[], savedId: string, filter: InventoryLineFilter): T | null {
+  const filtered = filterInventoryLines(items, filter);
+  if (filtered.length === 0) return null;
+  if (filter.onlyOpen) return filtered[0];
+  const idx = filtered.findIndex((item) => item.id === savedId || item.product_variant_id === savedId);
+  if (idx < 0) return filtered[0];
+  return filtered[idx + 1] ?? null;
+}
+
 export function estimatedQty(pack: number, full: number | null, remainder: RemainderLevel | null) {
   if (full == null || remainder == null) return null;
   return full * pack + REMAINDER_MID[remainder];

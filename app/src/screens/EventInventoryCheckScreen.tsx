@@ -8,6 +8,8 @@ import {
   SCOPE_LABEL,
   deltaLabel,
   estimatedQty,
+  filterInventoryLines,
+  nextOpenInventoryItem,
   stockLabel,
   type CheckScope,
   type InventoryCheck,
@@ -21,7 +23,7 @@ export function EventInventoryCheckScreen() {
   const [check, setCheck] = useState<InventoryCheck | null>(null);
   const [items, setItems] = useState<InventoryLine[]>([]);
   const [unchecked, setUnchecked] = useState(0);
-  const [index, setIndex] = useState(0);
+  const [currentId, setCurrentId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("");
   const [size, setSize] = useState("");
@@ -33,36 +35,25 @@ export function EventInventoryCheckScreen() {
 
   const refresh = useCallback(async () => {
     const result = await callEventInventory({ action: "get-check", id: checkId });
+    const nextItems = (result.items ?? []) as InventoryLine[];
     setCheck(result.check as InventoryCheck);
-    setItems((result.items ?? []) as InventoryLine[]);
+    setItems(nextItems);
     setUnchecked(Number(result.unchecked ?? 0));
+    return nextItems;
   }, [checkId]);
 
   useEffect(() => {
     void refresh().catch((error: Error) => setMessage(error.message));
   }, [refresh]);
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return items.filter((item) => {
-      if (onlyOpen && item.full_pack_count != null) return false;
-      if (category && (item.category_name || "미분류") !== category) return false;
-      if (size && item.size_name !== size) return false;
-      if (color && item.color_name !== color) return false;
-      if (!q) return true;
-      return (
-        item.product_name.toLowerCase().includes(q) ||
-        item.product_code.toLowerCase().includes(q) ||
-        item.sku_code.toLowerCase().includes(q)
-      );
-    });
-  }, [items, query, category, size, color, onlyOpen]);
+  const lineFilter = useMemo(
+    () => ({ onlyOpen, query, category, size, color }),
+    [onlyOpen, query, category, size, color],
+  );
 
-  useEffect(() => {
-    if (index >= filtered.length) setIndex(0);
-  }, [filtered.length, index]);
+  const filtered = useMemo(() => filterInventoryLines(items, lineFilter), [items, lineFilter]);
 
-  const current = filtered[index] ?? null;
+  const current = (currentId && filtered.find((item) => item.id === currentId)) || filtered[0] || null;
   const categories = [...new Set(items.map((item) => item.category_name || "미분류"))];
   const sizes = [...new Set(items.map((item) => item.size_name).filter(Boolean))] as string[];
   const colors = [...new Set(items.map((item) => item.color_name).filter(Boolean))] as string[];
@@ -80,6 +71,7 @@ export function EventInventoryCheckScreen() {
   const draft = check?.status === "DRAFT";
 
   async function save(line: InventoryLine, full: number, remainder: RemainderLevel) {
+    if (busy) return;
     setBusy(true);
     setMessage(null);
     try {
@@ -90,8 +82,12 @@ export function EventInventoryCheckScreen() {
         remainder_level: remainder,
         updated_at: line.updated_at,
       });
-      await refresh();
-      setIndex((value) => Math.min(value + 1, Math.max(filtered.length - 1, 0)));
+      const nextItems = await refresh();
+      const next = nextOpenInventoryItem(nextItems, line.id, lineFilter);
+      setCurrentId(next?.id ?? null);
+      window.requestAnimationFrame(() => {
+        document.getElementById("check-editor")?.scrollIntoView({ block: "nearest" });
+      });
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "저장 실패");
     } finally {
@@ -180,7 +176,11 @@ export function EventInventoryCheckScreen() {
         미입력만
       </label>
 
-      {current && draft ? <Editor line={current} busy={busy} onSave={save} /> : null}
+      {current && draft ? (
+        <div id="check-editor">
+          <Editor line={current} busy={busy} onSave={save} />
+        </div>
+      ) : null}
 
       {grouped.map(([group, rows]) => {
         const open = openGroups[group] ?? true;
@@ -197,14 +197,14 @@ export function EventInventoryCheckScreen() {
                   type="button"
                   onClick={() => {
                     setOnlyOpen(false);
-                    const pos = filtered.findIndex((item) => item.id === row.id);
-                    setIndex(pos >= 0 ? pos : 0);
+                    setCurrentId(row.id);
                   }}
                 >
                   <div>
                     <strong>{row.product_name}</strong>
                     <div className="muted">
                       {row.sku_code} · {stockLabel(row.full_pack_count, row.remainder_level, Number(row.pack_size_snapshot))}
+                      {current?.id === row.id ? " · 입력 중" : ""}
                     </div>
                   </div>
                 </button>
