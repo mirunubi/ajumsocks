@@ -6,7 +6,7 @@ ajumsocks MVP의 목적은 기능을 최대한 많이 만드는 것이 아니라
 새로운 기능 아이디어는 Web MVP 완료 조건에 직접 필요하지 않다면
 MVP 이후 Backlog로 보낸다.
 
-Architecture, Schema, Security의 현재 구현 설명은 이 문서에 다시 쓰지 않는다. 각각 `docs/ARCHITECTURE.md`, `docs/SCHEMA_INVENTORY.md`, `docs/SECURITY.md`, `docs/DECISIONS.md`를 본다.
+Architecture, Schema, Security의 현재 구현 설명은 이 문서에 다시 쓰지 않는다. 각각 `docs/ARCHITECTURE.md`, `docs/SCHEMA_INVENTORY.md`, `docs/SECURITY.md`, `docs/DECISIONS.md`를 본다. Pilot 준비 감사는 `docs/MVP_GAP_CHECK.md`.
 
 ---
 
@@ -366,7 +366,7 @@ Phase 9 후보 (상세 설계하지 않음):
 | --- | --- |
 | Phase 0~8.5 | COMPLETE |
 | MVP 운영개선 01 | COMPLETE |
-| Web MVP Gap Check | NEXT |
+| Web MVP Gap Check | COMPLETE — `docs/MVP_GAP_CHECK.md` |
 | Web MVP Gap Fix | PENDING |
 | Real Event Pilot | PENDING |
 | Web MVP Freeze | PENDING |
