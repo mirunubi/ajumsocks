@@ -1,13 +1,13 @@
 # Schema Inventory
 
-Source: live `pg_catalog` after `npx supabase db reset` (migrations through `20260919200000_event_finance.sql`).
+Source: live `pg_catalog` after `npx supabase db reset` (migrations through `20260920160000_event_organizers.sql`).
 
 Not derived from MASTER PLAN. Future tables (supplier, purchase order, shipment) are absent from this DB and are not listed.
 
 ## Counts
 
-- public business tables: **40**
-- public foreign keys: **96** (includes `profiles.id → auth.users.id`)
+- public business tables: **43**
+- public foreign keys: **101** (includes `profiles.id → auth.users.id`)
 - public enum types: **7**
 
 Excluded from table count: `auth`, `storage`, `realtime`, `vault`, `extensions`.
@@ -122,7 +122,7 @@ Primary Key: `id`
 Foreign Keys:
 - event_id → events(id) ON DELETE CASCADE
 Unique Constraints: none
-Important Checks: name not blank
+Important Checks: name not blank; email optional
 Referenced By: none
 
 ## event_daily_sales
@@ -231,6 +231,40 @@ Unique Constraints: UNIQUE (event_id, profile_id)
 Important Checks: none listed
 Referenced By: none
 
+## event_organizer_contacts
+
+Purpose: Catalog comment: Current organizer contact master. Copied to event_contacts at event create.
+Primary Key: `id`
+Foreign Keys:
+- organizer_id → event_organizers(id) ON DELETE RESTRICT
+Unique Constraints: none
+Important Checks: name not blank
+Referenced By: none
+
+## event_organizer_terms
+
+Purpose: Catalog comment: ADMIN-only default contract. Copied onto events at create; later edits do not rewrite existing events.
+Primary Key: `organizer_id`
+Foreign Keys:
+- organizer_id → event_organizers(id) ON DELETE RESTRICT
+- updated_by → profiles(id) ON DELETE SET NULL
+Unique Constraints: PRIMARY KEY (organizer_id)
+Important Checks: same contract value rules as events (NONE / COMMISSION / FIXED_FEE / MIXED)
+Referenced By: none
+
+## event_organizers
+
+Purpose: Catalog comment: Event host / venue operator. Safe fields only (name, color). Not a product supplier.
+Primary Key: `id`
+Foreign Keys:
+- created_by → profiles(id)
+Unique Constraints: unique index lower(btrim(name))
+Important Checks: name not blank; calendar_color HEX #RRGGBB
+Referenced By:
+- event_organizer_contacts.organizer_id
+- event_organizer_terms.organizer_id
+- events.organizer_id
+
 ## event_photos
 
 Purpose: Catalog comment: Photo metadata only. Binary in Storage bucket event-photos.
@@ -274,6 +308,7 @@ Purpose: Catalog comment: External sales events. Contract fields stored here.
 Primary Key: `id`
 Foreign Keys:
 - created_by → profiles(id)
+- organizer_id → event_organizers(id) ON DELETE RESTRICT
 Unique Constraints: none
 Important Checks: name/venue/address not blank; ends_at >= starts_at; commission_rate 0–100 or NULL; fixed_fee >= 0 or NULL; contract_type values required for COMMISSION/FIXED_FEE/MIXED
 Referenced By:

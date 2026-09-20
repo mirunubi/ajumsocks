@@ -502,3 +502,155 @@ h3.section-title {
   border-color: #7a1f1f;
 }
 
+.app-shell.wide {
+  width: min(72rem, 100%);
+}
+
+.admin-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.admin-top .tiny-btn {
+  width: auto;
+  margin-top: 0.4rem;
+  padding: 0.45rem 0.8rem;
+}
+
+.admin-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem 1rem;
+  margin: 0.5rem 0 1rem;
+}
+
+.admin-nav a {
+  color: #7a1f1f;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.cal-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  margin: 0.5rem 0 1rem;
+}
+
+.cal-toolbar select {
+  width: auto;
+  margin: 0;
+}
+
+.cal-weekdays,
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.25rem;
+}
+
+.cal-weekdays {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #6d5c56;
+  text-align: center;
+}
+
+.cal-cell {
+  margin: 0;
+  min-height: 6.5rem;
+  background: #fff;
+  color: inherit;
+  text-align: left;
+  padding: 0.35rem;
+  border: 1px solid #eadfd6;
+  border-radius: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  overflow: hidden;
+}
+
+.cal-cell.selected {
+  outline: 2px solid #7a1f1f;
+}
+
+.muted-cell {
+  opacity: 0.45;
+}
+
+.cal-daynum {
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.cal-bar {
+  display: block;
+  border-radius: 0.35rem;
+  padding: 0.12rem 0.28rem;
+  font-size: 0.68rem;
+  line-height: 1.2;
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cal-bar.cancelled {
+  opacity: 0.55;
+  text-decoration: line-through;
+}
+
+.cal-status {
+  display: inline-block;
+  margin-right: 0.25rem;
+  font-size: 0.62rem;
+  font-weight: 700;
+}
+
+.tab-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.8rem 0;
+}
+
+.palette {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.4rem 0 0.8rem;
+}
+
+.palette-swatch {
+  width: 1.8rem;
+  height: 1.8rem;
+  margin: 0;
+  border-radius: 999px;
+  border: 2px solid transparent;
+  padding: 0;
+}
+
+.palette-swatch.on {
+  border-color: #241714;
+}
+
+.color-dot {
+  width: 0.9rem;
+  height: 0.9rem;
+  border-radius: 999px;
+  display: inline-block;
+}
+
+@media (max-width: 720px) {
+  .cal-cell {
+    min-height: 3.2rem;
+  }
+  .cal-bar {
+    display: none;
+  }
+}
+

@@ -21,6 +21,10 @@ export function evaluateAccess(profile: Profile | null, now = new Date()): Acces
   return null;
 }
 
+export function homePath(role: AppRole): "/admin" | "/my-events" {
+  return role === "ADMIN" ? "/admin" : "/my-events";
+}
+
 export function denialMessage(reason: AccessDenial): string {
   switch (reason) {
     case "inactive":

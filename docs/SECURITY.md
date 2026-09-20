@@ -214,6 +214,17 @@ Table writes from the browser: **none** (GRANT SELECT + RLS SELECT policies only
 
 Unassigned STAFF/PART_TIMER: Edge 403 / RLS hides other events. Product master SELECT is `has_app_access` (any in-window role); product **write** is ADMIN Edge. Product UI routes use `AdminGuard` (UI only).
 
+Login UI is split (`/admin/login` vs `/login`) but Auth/RLS is unchanged. STAFF signing in at `/admin/login` is signed out in the client. ADMIN `/login` is allowed and redirects to `/admin`.
+
+### Organizer
+
+| Data | STAFF / PART_TIMER | ADMIN | Protection |
+| --- | --- | --- | --- |
+| `event_organizers` name/color/active | SELECT (`has_app_access`) | Same + write Edge | No contract columns on this table |
+| `event_organizer_terms` | **No** (RLS `is_admin_user`; Edge 403) | Edge `organizer-admin` | Same pattern as product cost |
+| `event_organizer_contacts` | **No** (RLS ADMIN) | Edge add/update/deactivate | Event snapshot is `event_contacts` |
+| Calendar DTO | assigned events only | all | `event-admin` `calendar` omits contract amounts |
+
 ---
 
 ## Finance Security

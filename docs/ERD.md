@@ -3,7 +3,7 @@
 Source: live PostgreSQL `public` schema after `npx supabase db reset`.  
 Cross-check: `docs/SCHEMA_INVENTORY.md`, `scripts/schema-inventory.json`.
 
-Public business tables: **40**. Public FKs: **96**. Enums: **7**.
+Public business tables: **43**. Public FKs: **101**. Enums: **7**.
 
 `auth.users` is not a public table. It appears only in ERD-A as an external reference for `profiles.id`.
 
@@ -32,8 +32,23 @@ erDiagram
   events {
     uuid id PK
     uuid created_by FK
+    uuid organizer_id FK
     event_status status
     event_contract_type contract_type
+  }
+  event_organizers {
+    uuid id PK
+    text name
+    text calendar_color
+  }
+  event_organizer_terms {
+    uuid organizer_id PK_FK
+    event_contract_type default_contract_type
+  }
+  event_organizer_contacts {
+    uuid id PK
+    uuid organizer_id FK
+    event_contact_type contact_type
   }
   event_members {
     uuid id PK
@@ -55,6 +70,9 @@ erDiagram
   "auth.users" ||--|| profiles : "profiles.id"
   profiles ||--o{ invites : profile_id
   profiles |o--o{ events : created_by
+  event_organizers |o--o{ events : organizer_id
+  event_organizers ||--|| event_organizer_terms : organizer_id
+  event_organizers ||--o{ event_organizer_contacts : organizer_id
   events ||--o{ event_members : event_id
   profiles ||--o{ event_members : profile_id
   events ||--o{ event_contacts : event_id
@@ -65,7 +83,9 @@ erDiagram
 - `profiles.id` is both PK and FK to `auth.users(id)` ON DELETE CASCADE (identifying 1:1).
 - `event_members` is the N:M assignment table; UNIQUE `(event_id, profile_id)`.
 - `event_contacts.event_id` is NOT NULL, ON DELETE CASCADE.
-- `events.created_by` and photo/invite `created_by`/`uploaded_by` are nullable FKs to `profiles`.
+- `events.organizer_id` is nullable (legacy events). New UI requires a selection.
+- `event_organizer_terms` is 1:1 ADMIN-only default contract. Snapshot onto `events` at create.
+- Organizer contacts are master rows; `event_contacts` remains the per-event snapshot.
 - Partial UNIQUE on `invites(profile_id)` applies only while `used_at` and `revoked_at` are NULL.
 
 ---

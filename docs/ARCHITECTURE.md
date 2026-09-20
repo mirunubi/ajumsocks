@@ -1,10 +1,10 @@
 # Architecture
 
-Source: live PostgreSQL after migrations through `20260919200000_event_finance.sql`, plus current Edge Functions and `app/` code.
+Source: live PostgreSQL after migrations through `20260920160000_event_organizers.sql`, plus current Edge Functions and `app/` code.
 
 This document describes **what is implemented now**. It is not a roadmap. Supplier / Purchase Order / Shipment / POS / automatic COGS tables and flows do not exist and are not documented as current behavior.
 
-Public business tables: **40**. Cross-check: `docs/SCHEMA_INVENTORY.md`, `docs/ERD.md`.
+Public business tables: **43**. Cross-check: `docs/SCHEMA_INVENTORY.md`, `docs/ERD.md`.
 
 ---
 
@@ -49,9 +49,9 @@ Browser env is only `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`. The
 ### Event
 
 * **책임:** 외부 판매 행사 헤더, 배정, 외부 담당자, 행사 사진, 계약 필드, 운영 status.
-* **주요 Table:** `events`, `event_members`, `event_contacts`, `event_photos`
-* **주요 Edge Function:** `event-admin`, `event-photos`
-* **연결:** Preparation / Assortment / Inventory / Finance / Audit가 모두 `events.id`를 가리킨다. INSERT 시 EVENT `inventory_locations` 행이 트리거로 생긴다. Dates do not auto-change `status`.
+* **주요 Table:** `events`, `event_members`, `event_contacts`, `event_photos`, `event_organizers`, `event_organizer_terms`, `event_organizer_contacts`
+* **주요 Edge Function:** `event-admin`, `event-photos`, `organizer-admin`
+* **연결:** Preparation / Assortment / Inventory / Finance / Audit가 모두 `events.id`를 가리킨다. INSERT 시 EVENT `inventory_locations` 행이 트리거로 생긴다. Dates do not auto-change `status`. Organizer 기본 계약/담당자는 행사 생성 시 Snapshot만 한다.
 
 ### Preparation
 
@@ -203,6 +203,7 @@ Edge는 Secret Key 클라이언트(`supabase/functions/_shared/supabase.ts`)로 
 | `event-inventory` | 배정 또는 ADMIN | create/save/confirm/cancel check |
 | `inventory-movement` | 목록/조회: ADMIN 또는 EVENT location 배정 | location/draft/adjustment/closing = ADMIN. dispatch = ADMIN 또는 출발 EVENT 배정. receive = ADMIN 또는 도착 EVENT 배정 |
 | `event-finance` | 매출/지출/요약(원가·손익 제외) = 배정 | void/receipt delete/원가/audit/dashboard/category upsert = ADMIN |
+| `organizer-admin` | 없음 | ADMIN only. STAFF는 `event_organizers` 이름/색상 SELECT만 |
 
 `service_role` 전용 RPC (anon/authenticated EXECUTE 없음):
 

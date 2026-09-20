@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Link, useParams } from "react-router-dom";
 import type { Profile } from "../lib/access";
-import { formatKstDateTime, formatKstRange, scheduleHint } from "../lib/datetime";
+import { formatKstDateTime, formatKstRange, kstHm, scheduleHint } from "../lib/datetime";
 import {
   ASSIGNMENT_LABEL,
   CONTACT_LABEL,
@@ -29,10 +29,13 @@ import { useAuth } from "../lib/session";
 
 type Detail = {
   event: EventRecord;
+  organizer: { id: string; name: string; calendar_color: string; is_active: boolean } | null;
   members: EventMember[];
   contacts: EventContact[];
   photos: EventPhoto[];
 };
+
+type Tab = "info" | "prep" | "inventory" | "finance";
 
 async function copyText(value: string) {
   await navigator.clipboard.writeText(value);
@@ -55,9 +58,11 @@ export function EventDetailScreen() {
     department: "",
     position: "",
     phone: "",
+    email: "",
     memo: "",
   });
   const [busy, setBusy] = useState(false);
+  const [tab, setTab] = useState<Tab>("info");
 
   const refresh = useCallback(async () => {
     const result = await callEventAdmin({ action: "get", id });
@@ -111,7 +116,7 @@ export function EventDetailScreen() {
     setMessage(null);
     try {
       await callEventAdmin({ action: "add-contact", event_id: id, ...contactForm });
-      setContactForm({ contact_type: "VENUE", name: "", company: "", department: "", position: "", phone: "", memo: "" });
+      setContactForm({ contact_type: "VENUE", name: "", company: "", department: "", position: "", phone: "", email: "", memo: "" });
       await refresh();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "담당자 등록 실패");
@@ -201,7 +206,7 @@ export function EventDetailScreen() {
     );
   }
 
-  const { event, members, contacts, photos } = detail;
+  const { event, organizer, members, contacts, photos } = detail;
   const address = fullAddress(event);
   const phones = [
     ...contacts.filter((row) => row.phone).map((row) => ({ label: row.name, phone: row.phone as string })),
@@ -212,20 +217,47 @@ export function EventDetailScreen() {
   return (
     <div className="app-shell">
       <div className="nav-row">
-        <Link to={isAdmin ? "/events" : "/"}>{isAdmin ? "← 목록" : "← 홈"}</Link>
+        <Link to={isAdmin ? "/admin" : "/my-events"}>{isAdmin ? "← 일정" : "← 내 행사"}</Link>
         <div className="brand">행사</div>
       </div>
 
       <h1>{event.name}</h1>
+      <p className="muted">{event.venue_name}</p>
       <div>
         <span className="badge">{EVENT_STATUS_LABEL[event.status]}</span>
         <span className="badge">{scheduleHint(event.starts_at, event.ends_at)}</span>
+        <span className="badge">{organizer?.name || "주최자 미지정"}</span>
       </div>
-      <p className="muted">
-        {event.venue_name} · {formatKstRange(event.starts_at, event.ends_at)}
-      </p>
+      <p className="muted">{formatKstRange(event.starts_at, event.ends_at)}</p>
       {copied ? <p className="copied">{copied} 복사됨</p> : null}
       {message ? <div className="error">{message}</div> : null}
+
+      <nav className="tab-row">
+        {(
+          [
+            ["info", "행사정보"],
+            ["prep", "행사준비"],
+            ["inventory", "재고"],
+            ["finance", "매출·지출"],
+          ] as Array<[Tab, string]>
+        ).map(([id, label]) => (
+          <button type="button" key={id} className={tab === id ? "chip active" : "chip"} onClick={() => setTab(id)}>
+            {label}
+          </button>
+        ))}
+      </nav>
+
+      {tab === "info" ? (
+        <>
+      <section className="card">
+        <div className="muted">기간</div>
+        <div>
+          시작 {formatKstDateTime(event.starts_at)} ({kstHm(event.starts_at)})
+        </div>
+        <div>
+          종료 {formatKstDateTime(event.ends_at)} ({kstHm(event.ends_at)})
+        </div>
+      </section>
 
       <section className="card">
         <div className="muted">주소</div>
@@ -275,16 +307,9 @@ export function EventDetailScreen() {
         ) : null}
       </section>
 
-      <EventAssortmentPanel eventId={event.id} isAdmin={isAdmin} />
-      <EventInventoryPanel eventId={event.id} />
-      <EventFinancePanel eventId={event.id} isAdmin={isAdmin} startsAt={event.starts_at} endsAt={event.ends_at} />
-      <EventPrepPanel eventId={event.id} isAdmin={isAdmin} startsAt={event.starts_at} />
-
       <section className="card">
-        <div className="muted">기간 (한국시간)</div>
-        <div>
-          {formatKstDateTime(event.starts_at)} ~ {formatKstDateTime(event.ends_at)}
-        </div>
+        <h2 className="section-title tight">주최자</h2>
+        <div>{organizer?.name || "주최자 미지정"}</div>
       </section>
 
       <section className="card">
@@ -300,7 +325,7 @@ export function EventDetailScreen() {
       </section>
 
       <section className="card">
-        <h2 className="section-title tight">외부 담당자</h2>
+        <h2 className="section-title tight">행사 당시 담당자</h2>
         {contacts.length === 0 ? <p className="muted">등록된 외부 담당자가 없습니다.</p> : null}
         {contacts.map((contact) => (
           <div className="stack-row" key={contact.id}>
@@ -310,6 +335,7 @@ export function EventDetailScreen() {
               {[contact.company, contact.department, contact.position].filter(Boolean).join(" / ")}
             </div>
             {contact.phone ? <div>{formatE164Display(contact.phone)}</div> : null}
+            {contact.email ? <div className="muted">{contact.email}</div> : null}
             {contact.memo ? <div className="muted">{contact.memo}</div> : null}
           </div>
         ))}
@@ -319,7 +345,7 @@ export function EventDetailScreen() {
         <h2 className="section-title tight">매대 계약</h2>
         <div>{CONTRACT_LABEL[event.contract_type]}</div>
         {isAdmin ? <div>{contractSummary(event)}</div> : null}
-        {event.contract_memo ? <p className="muted">{event.contract_memo}</p> : null}
+        {isAdmin && event.contract_memo ? <p className="muted">{event.contract_memo}</p> : null}
       </section>
 
       {event.memo ? (
@@ -375,6 +401,8 @@ export function EventDetailScreen() {
             <input value={contactForm.name} onChange={(e) => setContactForm({ ...contactForm, name: e.target.value })} required />
             <label>전화</label>
             <input value={contactForm.phone} onChange={(e) => setContactForm({ ...contactForm, phone: e.target.value })} />
+            <label>이메일</label>
+            <input value={contactForm.email} onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })} />
             <label>회사 / 백화점</label>
             <input value={contactForm.company} onChange={(e) => setContactForm({ ...contactForm, company: e.target.value })} />
             <label>부서</label>
@@ -400,6 +428,21 @@ export function EventDetailScreen() {
             <p className="muted">날짜가 지나도 상태는 자동으로 바뀌지 않습니다. 영구삭제는 없습니다.</p>
           </section>
         </>
+      ) : null}
+        </>
+      ) : null}
+
+      {tab === "prep" ? (
+        <>
+          <h2 className="section-title">집기·운영물품</h2>
+          <EventPrepPanel eventId={event.id} isAdmin={isAdmin} startsAt={event.starts_at} />
+          <h2 className="section-title">판매상품</h2>
+          <EventAssortmentPanel eventId={event.id} isAdmin={isAdmin} />
+        </>
+      ) : null}
+      {tab === "inventory" ? <EventInventoryPanel eventId={event.id} /> : null}
+      {tab === "finance" ? (
+        <EventFinancePanel eventId={event.id} isAdmin={isAdmin} startsAt={event.starts_at} endsAt={event.ends_at} />
       ) : null}
     </div>
   );

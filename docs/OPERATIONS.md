@@ -199,6 +199,7 @@ From root `package.json` (do not invent extra npm names):
 | `npm run verify:phase7` | Movements |
 | `npm run verify:phase8` | Finance |
 | `npm run verify:e2e` | Phase 8.5 end-to-end |
+| `npm run verify:organizers` | Event organizers / calendar / login homes |
 | `npm run verify:erd` | Live schema vs ERD/inventory docs |
 | `npm run build` | `npm --prefix app run build` |
 | `npm run provision:local` | Local Auth users |

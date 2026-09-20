@@ -33,7 +33,7 @@ export function EventsScreen() {
     void supabase
       .from("events")
       .select(
-        "id, name, starts_at, ends_at, status, venue_name, address, address_detail, memo, contract_type, contract_memo, created_by, created_at, updated_at, event_members(count)",
+        "id, name, starts_at, ends_at, status, venue_name, address, address_detail, memo, contract_type, contract_memo, organizer_id, created_by, created_at, updated_at, event_members(count)",
       )
       .then(({ data, error }) => {
         if (error) setMessage(error.message);
@@ -53,7 +53,7 @@ export function EventsScreen() {
   return (
     <div className="app-shell">
       <div className="nav-row">
-        <Link to="/">← 홈</Link>
+        <Link to="/admin">← 일정</Link>
         <div className="brand">행사관리</div>
       </div>
       <h1>행사관리</h1>

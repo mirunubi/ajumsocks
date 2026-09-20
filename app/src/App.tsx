@@ -1,12 +1,12 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { AdminGuard, AuthedGuard } from "./lib/AdminGuard";
+import { AdminCalendarScreen } from "./screens/AdminCalendarScreen";
 import { AssortmentSetDetailScreen } from "./screens/AssortmentSetDetailScreen";
 import { AssortmentSetsScreen } from "./screens/AssortmentSetsScreen";
 import { EventDetailScreen } from "./screens/EventDetailScreen";
 import { EventInventoryCheckScreen } from "./screens/EventInventoryCheckScreen";
 import { EventNewScreen } from "./screens/EventNewScreen";
 import { EventsScreen } from "./screens/EventsScreen";
-import { HomeScreen } from "./screens/HomeScreen";
 import { InviteScreen } from "./screens/InviteScreen";
 import { LocationStockScreen } from "./screens/LocationStockScreen";
 import { LocationsScreen } from "./screens/LocationsScreen";
@@ -15,19 +15,64 @@ import { ClosingDistributeScreen } from "./screens/ClosingDistributeScreen";
 import { MovementDetailScreen } from "./screens/MovementDetailScreen";
 import { MovementNewScreen } from "./screens/MovementNewScreen";
 import { MovementsScreen } from "./screens/MovementsScreen";
+import { MyEventsScreen } from "./screens/MyEventsScreen";
+import { OrganizerDetailScreen } from "./screens/OrganizerDetailScreen";
+import { OrganizersScreen } from "./screens/OrganizersScreen";
 import { PreparationSetDetailScreen } from "./screens/PreparationSetDetailScreen";
 import { PreparationSetsScreen } from "./screens/PreparationSetsScreen";
 import { PreparationsScreen } from "./screens/PreparationsScreen";
 import { ProductDetailScreen } from "./screens/ProductDetailScreen";
 import { ProductsScreen } from "./screens/ProductsScreen";
+import { RoleHome } from "./screens/RoleHome";
 import { UsersScreen } from "./screens/UsersScreen";
 
 export function App() {
   return (
     <Routes>
-      <Route path="/login" element={<LoginScreen />} />
+      <Route path="/login" element={<LoginScreen variant="field" />} />
+      <Route path="/admin/login" element={<LoginScreen variant="admin" />} />
       <Route path="/invite/:token" element={<InviteScreen />} />
-      <Route path="/" element={<HomeScreen />} />
+      <Route path="/" element={<RoleHome />} />
+      <Route
+        path="/admin"
+        element={
+          <AdminGuard>
+            <AdminCalendarScreen />
+          </AdminGuard>
+        }
+      />
+      <Route
+        path="/my-events"
+        element={
+          <AuthedGuard>
+            <MyEventsScreen />
+          </AuthedGuard>
+        }
+      />
+      <Route
+        path="/organizers"
+        element={
+          <AdminGuard>
+            <OrganizersScreen />
+          </AdminGuard>
+        }
+      />
+      <Route
+        path="/organizers/new"
+        element={
+          <AdminGuard>
+            <OrganizerDetailScreen />
+          </AdminGuard>
+        }
+      />
+      <Route
+        path="/organizers/:id"
+        element={
+          <AdminGuard>
+            <OrganizerDetailScreen />
+          </AdminGuard>
+        }
+      />
       <Route
         path="/users"
         element={

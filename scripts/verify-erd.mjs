@@ -97,8 +97,8 @@ function main() {
   const erd = erdEntities(erdMd);
   const invFk = inventoryFkCount(inventoryMd);
 
-  expect("live public table count is 40", liveTables.length === 40, String(liveTables.length));
-  expect("live public FK count is 96", live.fk_count === 96, String(live.fk_count));
+  expect("live public table count is 43", liveTables.length === 43, String(liveTables.length));
+  expect("live public FK count is 101", live.fk_count === 101, String(live.fk_count));
   expect("live public enum count is 7", live.enum_count === 7, String(live.enum_count));
   expect("snapshot table count matches live", snapshot.public_table_count === liveTables.length);
   expect("snapshot fk count matches live", snapshot.public_fk_count === live.fk_count);

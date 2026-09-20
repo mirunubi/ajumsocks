@@ -268,3 +268,42 @@ Why:
 
 Impact:
 정정은 새 Check, Adjustment, 새 매출 저장, expense void, 원가 재입력이다. 자동으로 이력을 현재값에 맞춰 재작성하지 않는다.
+
+---
+
+## D-019 Event Organizer와 Supplier를 별도 Domain으로 관리
+
+Decision:
+행사 주최자/행사장 운영사는 `event_organizers`다. 일반적인 `vendors` 테이블을 만들지 않는다. 상품 도매사(Supplier)는 아직 없으며 Phase 9 이후에 별도 Domain으로 둔다. `products.wholesaler_name`은 그대로 둔다.
+
+Why:
+주최자(네이처플러스, 백화점, 축제)와 매입처는 계약·재고·발주 의미가 다르다. 한 vendor로 합치면 수수료 기본값과 매입 단가가 섞인다.
+
+Impact:
+Organizer 이름/색상은 앱 사용자가 읽어도 된다. 계약 기본값은 `event_organizer_terms`로 분리한다.
+
+---
+
+## D-020 Organizer Terms는 Event 생성 시 Snapshot
+
+Decision:
+`event_organizer_terms`는 새 행사 생성 편의용 Default다. 행사 저장 시 `events.contract_type` / `commission_rate` / `fixed_fee` / `contract_memo`에 복사한다. Organizer 기본값을 나중에 바꿔도 기존 행사 계약은 바꾸지 않는다. Organizer Contact도 `event_contacts`로 복사하며 이후 Master 변경은 기존 행사를 덮지 않는다.
+
+Why:
+행사 당시 계약과 담당자가 운영 사실이다. 주최자 마스터를 고친다고 지난 판교 행사 수수료가 바뀌면 Finance가 깨진다.
+
+Impact:
+Finance 계산은 계속 `events` 계약 컬럼만 본다. Terms SELECT는 ADMIN only.
+
+---
+
+## D-021 관리자/현장 로그인은 UI만 분리
+
+Decision:
+Auth Backend, `profiles`, role enum, login window, MASTER 보호를 둘로 나누지 않는다. `/admin/login`과 `/login`은 같은 `signInWithPassword`다. ADMIN 첫 화면은 `/admin` 월간 캘린더, STAFF/PART_TIMER는 `/my-events`.
+
+Why:
+권한 분기는 이미 `profiles.role`과 RLS에 있다. Auth를 두 개 만들면 초대·비밀번호·login window가 이중화된다.
+
+Impact:
+`AdminGuard`는 `/admin/login`으로 보낸다. STAFF가 관리자 로그인 화면에서 성공하면 세션을 종료한다.

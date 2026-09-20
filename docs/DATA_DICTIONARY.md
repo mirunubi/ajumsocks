@@ -1,8 +1,8 @@
 # Data Dictionary
 
-Source: live `pg_catalog` and `supabase/migrations/` through `20260919200000_event_finance.sql`. Edge write paths are from `supabase/functions/`.
+Source: live `pg_catalog` and `supabase/migrations/` through `20260920160000_event_organizers.sql`. Edge write paths are from `supabase/functions/`.
 
-Public business tables: **40**. Same set as `docs/SCHEMA_INVENTORY.md`. Future tables are not listed.
+Public business tables: **43**. Same set as `docs/SCHEMA_INVENTORY.md`. Future tables are not listed.
 
 Column dumps are omitted. Key fields are the identifiers and business-meaning columns.
 
@@ -220,6 +220,39 @@ Write Authority: Edge `event-admin` add-member (ADMIN). SELECT: 배정 또는 AD
 Delete / History Policy: 행을 이력으로 유지 (comment). 배정이 RLS `can_read_event`의 기준
 Important Notes: `assignment_role`은 `profiles.role`과 독립.
 
+## event_organizer_contacts
+
+Purpose: 주최자 담당자 Master. 행사 생성 시 `event_contacts`로 복사한다.
+Primary Key: `id`
+Main Foreign Keys: `organizer_id` → `event_organizers` RESTRICT
+Key Fields: `contact_type`, `name`, `department`, `position`, `phone`, `email`, `is_active`
+Important Constraints: name not blank. `event_contact_type` 재사용 (VENUE/HQ/OTHER)
+Write Authority: Edge `organizer-admin` (ADMIN). SELECT RLS: ADMIN only
+Delete / History Policy: 물리삭제 없음. `is_active=false`
+Important Notes: Master 변경은 기존 event_contacts를 바꾸지 않는다.
+
+## event_organizer_terms
+
+Purpose: 주최자 기본 계약조건. ADMIN only.
+Primary Key: `organizer_id`
+Main Foreign Keys: `organizer_id` 1:1; `updated_by`
+Key Fields: `default_contract_type`, `default_commission_rate`, `default_fixed_fee`, `memo`
+Important Constraints: events와 같은 계약값 CHECK
+Write Authority: Edge `organizer-admin` upsert-terms (ADMIN). SELECT RLS: `is_admin_user`
+Delete / History Policy: Organizer와 RESTRICT
+Important Notes: 기본값은 새 행사 Snapshot 원본일 뿐. 기존 events 계약은 불변.
+
+## event_organizers
+
+Purpose: 행사 주최자/행사장 운영사. 상품 도매사(Supplier)가 아니다.
+Primary Key: `id`
+Main Foreign Keys: `created_by` nullable
+Key Fields: `name`, `calendar_color`, `is_active`
+Important Constraints: unique lower(btrim(name)); color `#RRGGBB`
+Write Authority: Edge `organizer-admin` (ADMIN). SELECT: `has_app_access` (이름/색상만, 금융 컬럼 없음)
+Delete / History Policy: 물리삭제 없음. `is_active=false`. 과거 events.organizer_id 유지
+Important Notes: 계약금액은 이 테이블에 두지 않는다.
+
 ## event_photos
 
 Purpose: 행사 사진 메타. 바이트는 `event-photos`.
@@ -257,12 +290,12 @@ Important Notes: 템플릿 copy 후 수동 라인 추가 가능.
 
 Purpose: 외부 판매 행사 기본 Entity. 계약 필드와 운영 status를 가진다.
 Primary Key: `id`
-Main Foreign Keys: `created_by` → `profiles` (nullable)
-Key Fields: `name`, `starts_at`, `ends_at`, `status` (PREPARING, ACTIVE, ENDED, SETTLED, CANCELLED), `venue_name`, `address`, `contract_type` (NONE, COMMISSION, FIXED_FEE, MIXED), `commission_rate`, `fixed_fee`
+Main Foreign Keys: `created_by` → `profiles` (nullable); `organizer_id` → `event_organizers` (nullable)
+Key Fields: `name`, `starts_at`, `ends_at`, `status` (PREPARING, ACTIVE, ENDED, SETTLED, CANCELLED), `venue_name`, `address`, `organizer_id`, `contract_type` (NONE, COMMISSION, FIXED_FEE, MIXED), `commission_rate`, `fixed_fee`
 Important Constraints: ends_at >= starts_at; 공백 금지; COMMISSION이면 rate 필수; FIXED_FEE이면 fee 필수; MIXED면 둘 다; rate 0–100
 Write Authority: Edge `event-admin` (ADMIN). SELECT (PostgREST): 배정 또는 ADMIN, 단 `commission_rate` / `fixed_fee`는 `authenticated` GRANT 없음. 계약 금액은 ADMIN Edge `get`만
 Delete / History Policy: 대부분 자식이 ON DELETE RESTRICT. `event_contacts`만 CASCADE. 날짜가 status를 자동 변경하지 않음
-Important Notes: INSERT 트리거가 EVENT `inventory_locations` 1행을 만든다 (부분 UNIQUE). Finance 요약이 계약 필드를 읽는다. P&L 숫자는 이 테이블에 저장하지 않음. STAFF는 `contract_type`만 볼 수 있고 수수료율/입점비 금액은 볼 수 없다.
+Important Notes: INSERT 트리거가 EVENT `inventory_locations` 1행을 만든다 (부분 UNIQUE). Finance 요약이 계약 필드를 읽는다. P&L 숫자는 이 테이블에 저장하지 않음. STAFF는 `contract_type`만 볼 수 있고 수수료율/입점비 금액은 볼 수 없다. `organizer_id` NULL = 주최자 미지정(기존 행사). 신규 UI는 Organizer 필수.
 
 ## expense_categories
 

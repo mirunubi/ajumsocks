@@ -1,6 +1,6 @@
 {
-  "public_table_count": 40,
-  "public_fk_count": 96,
+  "public_table_count": 43,
+  "public_fk_count": 101,
   "public_enum_count": 7,
   "tables": [
     "assortment_set_rules",
@@ -19,6 +19,9 @@
     "event_inventory_checks",
     "event_inventory_current",
     "event_members",
+    "event_organizer_contacts",
+    "event_organizer_terms",
+    "event_organizers",
     "event_photos",
     "event_preparation_items",
     "event_preparation_plans",
@@ -251,6 +254,22 @@
       "def": "FOREIGN KEY (profile_id) REFERENCES profiles(id) ON DELETE RESTRICT"
     },
     {
+      "from_table": "event_organizer_contacts",
+      "def": "FOREIGN KEY (organizer_id) REFERENCES event_organizers(id) ON DELETE RESTRICT"
+    },
+    {
+      "from_table": "event_organizer_terms",
+      "def": "FOREIGN KEY (organizer_id) REFERENCES event_organizers(id) ON DELETE RESTRICT"
+    },
+    {
+      "from_table": "event_organizer_terms",
+      "def": "FOREIGN KEY (updated_by) REFERENCES profiles(id) ON DELETE SET NULL"
+    },
+    {
+      "from_table": "event_organizers",
+      "def": "FOREIGN KEY (created_by) REFERENCES profiles(id)"
+    },
+    {
       "from_table": "event_photos",
       "def": "FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE RESTRICT"
     },
@@ -289,6 +308,10 @@
     {
       "from_table": "events",
       "def": "FOREIGN KEY (created_by) REFERENCES profiles(id)"
+    },
+    {
+      "from_table": "events",
+      "def": "FOREIGN KEY (organizer_id) REFERENCES event_organizers(id) ON DELETE RESTRICT"
     },
     {
       "from_table": "inventory_adjustments",

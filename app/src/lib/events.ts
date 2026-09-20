@@ -17,6 +17,7 @@ export type EventRecord = {
   commission_rate?: number | null;
   fixed_fee?: number | null;
   contract_memo: string | null;
+  organizer_id?: string | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;
@@ -43,6 +44,7 @@ export type EventContact = {
   department: string | null;
   position: string | null;
   phone: string | null;
+  email: string | null;
   memo: string | null;
   sort_order: number;
 };

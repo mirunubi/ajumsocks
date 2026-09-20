@@ -51,9 +51,9 @@ Domain verify: `npm run verify:phase0`, `npm run verify:phase1`.
 
 ### Event
 
-Check: `events`, `event_members`, `event_contacts`, `event_photos`. Contract amount columns are ADMIN-only (see `docs/DECISIONS.md` D-014, `docs/SECURITY.md`).
+Check: `events`, `event_members`, `event_contacts`, `event_photos`, `event_organizers` / terms / contacts. Contract amount columns are ADMIN-only (see `docs/DECISIONS.md` D-014, `docs/SECURITY.md`).
 
-Domain verify: `npm run verify:phase2`.
+Domain verify: `npm run verify:phase2`, `npm run verify:organizers`.
 
 ### Preparation
 

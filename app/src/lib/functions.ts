@@ -66,3 +66,7 @@ export function callInventoryMovement(body: Record<string, unknown>) {
 export function callEventFinance(body: Record<string, unknown>) {
   return call("event-finance", body, true);
 }
+
+export function callOrganizerAdmin(body: Record<string, unknown>) {
+  return call("organizer-admin", body, true);
+}

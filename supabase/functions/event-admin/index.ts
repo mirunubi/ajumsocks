@@ -46,6 +46,7 @@ Deno.serve(async (req) => {
     const isAdmin = caller.role === "ADMIN";
 
     if (action === "get") return await getEvent(req, service, callerId, isAdmin, body);
+    if (action === "calendar") return await calendarEvents(req, service, callerId, isAdmin, body);
     if (action === "create") return await requireAdmin(req, isAdmin, () => createEvent(req, service, callerId, body));
     if (action === "update") return await requireAdmin(req, isAdmin, () => updateEvent(req, service, body));
     if (action === "set-status") return await requireAdmin(req, isAdmin, () => setStatus(req, service, body));
@@ -123,6 +124,98 @@ function publicEvent(row: Record<string, unknown>, isAdmin: boolean) {
   return safe;
 }
 
+function calendarDto(row: {
+  id: string;
+  name: string;
+  venue_name: string;
+  starts_at: string;
+  ends_at: string;
+  status: EventStatus;
+  organizer_id: string | null;
+  event_organizers:
+    | { id: string; name: string; calendar_color: string }
+    | { id: string; name: string; calendar_color: string }[]
+    | null;
+}) {
+  const raw = row.event_organizers;
+  const organizer = Array.isArray(raw) ? (raw[0] ?? null) : raw;
+  return {
+    id: row.id,
+    name: row.name,
+    venue_name: row.venue_name,
+    starts_at: row.starts_at,
+    ends_at: row.ends_at,
+    status: row.status,
+    organizer_id: row.organizer_id,
+    organizer_name: organizer?.name ?? null,
+    organizer_color: organizer?.calendar_color ?? null,
+  };
+}
+
+async function loadOrganizerSafe(service: ReturnType<typeof secretClient>, organizerId: string | null) {
+  if (!organizerId) return null;
+  const { data } = await service
+    .from("event_organizers")
+    .select("id, name, calendar_color, is_active")
+    .eq("id", organizerId)
+    .maybeSingle();
+  return data ?? null;
+}
+
+async function resolveContract(
+  service: ReturnType<typeof secretClient>,
+  body: Record<string, unknown>,
+  organizerId: string | null,
+) {
+  const hasContractInput = "contract_type" in body;
+  if (!hasContractInput && organizerId) {
+    const { data: terms } = await service
+      .from("event_organizer_terms")
+      .select("*")
+      .eq("organizer_id", organizerId)
+      .maybeSingle();
+    return contractFields({
+      contract_type: terms?.default_contract_type ?? "NONE",
+      commission_rate: terms?.default_commission_rate ?? null,
+      fixed_fee: terms?.default_fixed_fee ?? null,
+      contract_memo: terms?.memo ?? null,
+    });
+  }
+  return contractFields(body);
+}
+
+async function copyOrganizerContacts(
+  service: ReturnType<typeof secretClient>,
+  eventId: string,
+  organizerId: string,
+  organizerName: string,
+  contactIds: string[],
+) {
+  if (contactIds.length === 0) return;
+  const { data: contacts } = await service
+    .from("event_organizer_contacts")
+    .select("*")
+    .eq("organizer_id", organizerId)
+    .in("id", contactIds)
+    .eq("is_active", true)
+    .order("sort_order");
+  if (!contacts?.length) return;
+  const rows = contacts.map((contact, index) => ({
+    event_id: eventId,
+    contact_type: contact.contact_type,
+    name: contact.name,
+    company: organizerName,
+    department: contact.department,
+    position: contact.position,
+    phone: contact.phone,
+    email: contact.email,
+    memo: contact.memo,
+    sort_order: index + 1,
+  }));
+  const { error } = await service.from("event_contacts").insert(rows);
+  if (error) throw error;
+}
+
 async function getEvent(
   req: Request,
   service: ReturnType<typeof secretClient>,
@@ -140,10 +233,11 @@ async function getEvent(
   if (error) throw error;
   if (!event) return json(req, { error: "not_found" }, 404);
 
-  const [{ data: members }, { data: contacts }, { data: photos }] = await Promise.all([
+  const [{ data: members }, { data: contacts }, { data: photos }, organizer] = await Promise.all([
     service.from("event_members").select("*").eq("event_id", id).order("created_at"),
     service.from("event_contacts").select("*").eq("event_id", id).order("sort_order"),
     service.from("event_photos").select("*").eq("event_id", id).order("created_at"),
+    loadOrganizerSafe(service, event.organizer_id),
   ]);
 
   const profileIds = [...new Set((members ?? []).map((row) => row.profile_id))];
@@ -162,6 +256,7 @@ async function getEvent(
 
   return json(req, {
     event: publicEvent(event, isAdmin),
+    organizer,
     members: (members ?? []).map((row) => ({
       ...row,
       display_name: profileMap.get(row.profile_id)?.display_name ?? "",
@@ -170,6 +265,57 @@ async function getEvent(
     })),
     contacts: contacts ?? [],
     photos: signed,
+  });
+}
+
+async function calendarEvents(
+  req: Request,
+  service: ReturnType<typeof secretClient>,
+  callerId: string,
+  isAdmin: boolean,
+  body: Record<string, unknown>,
+) {
+  const from = text(body.from);
+  const to = text(body.to);
+  if (!from || !to) return json(req, { error: "invalid_input" }, 400);
+  const fromIso = Date.parse(from);
+  const toIso = Date.parse(to);
+  if (!Number.isFinite(fromIso) || !Number.isFinite(toIso)) return json(req, { error: "invalid_range" }, 400);
+
+  let query = service
+    .from("events")
+    .select("id, name, venue_name, starts_at, ends_at, status, organizer_id, event_organizers(id, name, calendar_color)")
+    .lte("starts_at", new Date(toIso).toISOString())
+    .gte("ends_at", new Date(fromIso).toISOString())
+    .order("starts_at");
+
+  if (!isAdmin) {
+    const { data: memberships } = await service.from("event_members").select("event_id").eq("profile_id", callerId);
+    const ids = (memberships ?? []).map((row) => row.event_id);
+    if (ids.length === 0) return json(req, { events: [] });
+    query = query.in("id", ids);
+  }
+
+  const organizerFilter = text(body.organizer_id);
+  if (organizerFilter) query = query.eq("organizer_id", organizerFilter);
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return json(req, {
+    events: (data ?? []).map((row) =>
+      calendarDto(
+        row as {
+          id: string;
+          name: string;
+          venue_name: string;
+          starts_at: string;
+          ends_at: string;
+          status: EventStatus;
+          organizer_id: string | null;
+          event_organizers: { id: string; name: string; calendar_color: string } | null;
+        },
+      ),
+    ),
   });
 }
 
@@ -188,7 +334,20 @@ async function createEvent(
 
   const range = parseRange(text(body.starts_at), text(body.ends_at));
   if ("error" in range) return json(req, { error: range.error }, 400);
-  const contract = contractFields(body);
+
+  const organizer_id = text(body.organizer_id) || null;
+  let organizerName = "";
+  if (organizer_id) {
+    const { data: organizer } = await service
+      .from("event_organizers")
+      .select("id, name")
+      .eq("id", organizer_id)
+      .maybeSingle();
+    if (!organizer) return json(req, { error: "organizer_not_found" }, 404);
+    organizerName = organizer.name;
+  }
+
+  const contract = await resolveContract(service, body, organizer_id);
   if ("error" in contract) return json(req, { error: contract.error }, 400);
 
   const row = {
@@ -199,12 +358,20 @@ async function createEvent(
     memo: text(body.memo) || null,
     status,
     created_by: callerId,
+    organizer_id,
     ...range,
     ...contract,
   };
 
   const { data, error } = await service.from("events").insert(row).select("*").maybeSingle();
   if (error) return json(req, { error: error.message }, 400);
+
+  const copyIds = Array.isArray(body.copy_contact_ids)
+    ? (body.copy_contact_ids as unknown[]).map((id) => text(id)).filter(Boolean)
+    : [];
+  if (organizer_id && copyIds.length) {
+    await copyOrganizerContacts(service, data.id, organizer_id, organizerName, copyIds);
+  }
   return json(req, { event: data });
 }
 
@@ -229,6 +396,14 @@ async function updateEvent(req: Request, service: ReturnType<typeof secretClient
   if ("error" in contract) return json(req, { error: contract.error }, 400);
 
   const patch: Record<string, unknown> = { ...range, ...contract };
+  if ("organizer_id" in body) {
+    const organizer_id = text(body.organizer_id) || null;
+    if (organizer_id) {
+      const { data: organizer } = await service.from("event_organizers").select("id").eq("id", organizer_id).maybeSingle();
+      if (!organizer) return json(req, { error: "organizer_not_found" }, 404);
+    }
+    patch.organizer_id = organizer_id;
+  }
   if ("name" in body) patch.name = text(body.name);
   if ("venue_name" in body) patch.venue_name = text(body.venue_name);
   if ("address" in body) patch.address = text(body.address);
@@ -324,6 +499,7 @@ async function addContact(req: Request, service: ReturnType<typeof secretClient>
     department: text(body.department) || null,
     position: text(body.position) || null,
     phone: text(body.phone) || null,
+    email: text(body.email) || null,
     memo: text(body.memo) || null,
     sort_order: Number.isFinite(Number(body.sort_order)) ? Number(body.sort_order) : (last?.sort_order ?? 0) + 1,
   };
@@ -346,6 +522,7 @@ async function updateContact(req: Request, service: ReturnType<typeof secretClie
   if ("department" in body) patch.department = text(body.department) || null;
   if ("position" in body) patch.position = text(body.position) || null;
   if ("phone" in body) patch.phone = text(body.phone) || null;
+  if ("email" in body) patch.email = text(body.email) || null;
   if ("memo" in body) patch.memo = text(body.memo) || null;
   if ("sort_order" in body) patch.sort_order = Number(body.sort_order);
 

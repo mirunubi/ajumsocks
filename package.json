@@ -22,6 +22,7 @@
     "verify:phase8": "node scripts/verify-phase8.mjs",
     "verify:e2e": "node scripts/verify-e2e-phase8.mjs",
     "verify:erd": "node scripts/verify-erd.mjs",
+    "verify:organizers": "node scripts/verify-organizers.mjs",
     "dev": "npm --prefix app run dev",
     "build": "npm --prefix app run build"
   },

@@ -30,6 +30,27 @@ export function datetimeLocalKstToIso(local: string): string {
   return new Date(`${value}+09:00`).toISOString();
 }
 
+export function kstYmd(iso: string): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: KST, year: "numeric", month: "2-digit", day: "2-digit" }).format(
+    new Date(iso),
+  );
+}
+
+export function kstHm(iso: string): string {
+  const options: Intl.DateTimeFormatOptions = { hour: "2-digit", minute: "2-digit", hourCycle: "h23" };
+  return `${part(iso, "hour", options)}:${part(iso, "minute", options)}`;
+}
+
+export function combineKstDateTime(date: string, time: string): string {
+  if (!date || !time) return "";
+  return datetimeLocalKstToIso(`${date}T${time}`);
+}
+
+export function splitKstDateTime(iso: string): { date: string; time: string } {
+  if (!iso) return { date: "", time: "" };
+  return { date: kstYmd(iso), time: kstHm(iso) };
+}
+
 export function formatKstDate(iso: string): string {
   return new Intl.DateTimeFormat("ko-KR", {
     timeZone: KST,
