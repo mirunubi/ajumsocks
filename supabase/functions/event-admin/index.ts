@@ -117,6 +117,12 @@ async function canRead(
   return Boolean(data);
 }
 
+function publicEvent(row: Record<string, unknown>, isAdmin: boolean) {
+  if (isAdmin) return row;
+  const { commission_rate: _rate, fixed_fee: _fee, ...safe } = row;
+  return safe;
+}
+
 async function getEvent(
   req: Request,
   service: ReturnType<typeof secretClient>,
@@ -155,7 +161,7 @@ async function getEvent(
   );
 
   return json(req, {
-    event,
+    event: publicEvent(event, isAdmin),
     members: (members ?? []).map((row) => ({
       ...row,
       display_name: profileMap.get(row.profile_id)?.display_name ?? "",

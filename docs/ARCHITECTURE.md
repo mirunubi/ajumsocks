@@ -214,7 +214,7 @@ Edge는 Secret Key 클라이언트(`supabase/functions/_shared/supabase.ts`)로 
 RLS SELECT 요약:
 
 * ADMIN (`private.is_admin_user`): 로그인 창이 열린 ADMIN. 행사 전체, 템플릿, 원가, audit, adjustment
-* 배정 (`private.can_read_event`): 해당 행사 행
+* 배정 (`private.can_read_event`): 해당 행사 행. `events.commission_rate` / `fixed_fee`는 column privilege로 `authenticated` SELECT 불가 (ADMIN도 PostgREST로는 못 읽음; Edge Secret 경로만)
 * 상품 마스터 SELECT: `private.has_app_access` (역할 무관, 접근창만)
 * 준비 템플릿 SELECT: ADMIN only
 * 동료 `profiles`: 같은 행사 배정자의 이름/전화 SELECT 가능. MASTER 행 쓰기(역할·비활성·삭제)는 트리거로 보호

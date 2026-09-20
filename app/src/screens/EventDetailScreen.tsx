@@ -318,7 +318,7 @@ export function EventDetailScreen() {
       <section className="card">
         <h2 className="section-title tight">매대 계약</h2>
         <div>{CONTRACT_LABEL[event.contract_type]}</div>
-        <div>{contractSummary(event)}</div>
+        {isAdmin ? <div>{contractSummary(event)}</div> : null}
         {event.contract_memo ? <p className="muted">{event.contract_memo}</p> : null}
       </section>
 

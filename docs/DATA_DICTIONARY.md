@@ -260,9 +260,9 @@ Primary Key: `id`
 Main Foreign Keys: `created_by` → `profiles` (nullable)
 Key Fields: `name`, `starts_at`, `ends_at`, `status` (PREPARING, ACTIVE, ENDED, SETTLED, CANCELLED), `venue_name`, `address`, `contract_type` (NONE, COMMISSION, FIXED_FEE, MIXED), `commission_rate`, `fixed_fee`
 Important Constraints: ends_at >= starts_at; 공백 금지; COMMISSION이면 rate 필수; FIXED_FEE이면 fee 필수; MIXED면 둘 다; rate 0–100
-Write Authority: Edge `event-admin` (ADMIN). SELECT: ADMIN 전체 또는 배정
+Write Authority: Edge `event-admin` (ADMIN). SELECT (PostgREST): 배정 또는 ADMIN, 단 `commission_rate` / `fixed_fee`는 `authenticated` GRANT 없음. 계약 금액은 ADMIN Edge `get`만
 Delete / History Policy: 대부분 자식이 ON DELETE RESTRICT. `event_contacts`만 CASCADE. 날짜가 status를 자동 변경하지 않음
-Important Notes: INSERT 트리거가 EVENT `inventory_locations` 1행을 만든다 (부분 UNIQUE). Finance 요약이 계약 필드를 읽는다. P&L 숫자는 이 테이블에 저장하지 않음.
+Important Notes: INSERT 트리거가 EVENT `inventory_locations` 1행을 만든다 (부분 UNIQUE). Finance 요약이 계약 필드를 읽는다. P&L 숫자는 이 테이블에 저장하지 않음. STAFF는 `contract_type`만 볼 수 있고 수수료율/입점비 금액은 볼 수 없다.
 
 ## expense_categories
 

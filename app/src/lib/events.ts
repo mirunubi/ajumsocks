@@ -14,8 +14,8 @@ export type EventRecord = {
   address_detail: string | null;
   memo: string | null;
   contract_type: ContractType;
-  commission_rate: number | null;
-  fixed_fee: number | null;
+  commission_rate?: number | null;
+  fixed_fee?: number | null;
   contract_memo: string | null;
   created_by: string | null;
   created_at: string;

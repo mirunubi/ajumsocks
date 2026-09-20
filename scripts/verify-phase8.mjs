@@ -165,6 +165,46 @@ async function main() {
     token,
   );
 
+  const adminGet = await callFn("event-admin", { action: "get", id: aId }, token);
+  await expect(
+    "ADMIN event 일반정보 조회",
+    adminGet.status === 200 && Boolean(adminGet.json.event?.id) && Boolean(adminGet.json.event?.name),
+    adminGet.json.error,
+  );
+  await expect("ADMIN commission_rate 조회", n(adminGet.json.event.commission_rate) === 20);
+  await expect("ADMIN fixed_fee 조회", "fixed_fee" in (adminGet.json.event || {}));
+
+  const staffSafe = await staff.supabase.from("events").select("id, name, status, venue_name, address").eq("id", aId);
+  const partSafe = await partTimer.supabase.from("events").select("id, name, status").eq("id", aId);
+  await expect("배정 STAFF 일반 event 정보", (staffSafe.data || []).length === 1 && Boolean(staffSafe.data?.[0]?.name));
+  await expect("배정 PART_TIMER 일반 event 정보", (partSafe.data || []).length === 1);
+
+  const staffRate = await staff.supabase.from("events").select("commission_rate").eq("id", aId);
+  const staffFee = await staff.supabase.from("events").select("fixed_fee").eq("id", aId);
+  const partRate = await partTimer.supabase.from("events").select("commission_rate").eq("id", aId);
+  const partFee = await partTimer.supabase.from("events").select("fixed_fee").eq("id", aId);
+  const staffGet = await callFn("event-admin", { action: "get", id: aId }, staff.session.access_token);
+  const partGet = await callFn("event-admin", { action: "get", id: aId }, partTimer.session.access_token);
+  const staffOther = await staff.supabase.from("events").select("id").eq("id", bId);
+  await expect("배정 STAFF commission_rate 직접 조회 실패", Boolean(staffRate.error));
+  await expect("배정 STAFF fixed_fee 직접 조회 실패", Boolean(staffFee.error));
+  await expect("배정 PART_TIMER commission_rate 직접 조회 실패", Boolean(partRate.error));
+  await expect("배정 PART_TIMER fixed_fee 직접 조회 실패", Boolean(partFee.error));
+  await expect(
+    "event-admin get STAFF 계약금액 미노출",
+    staffGet.status === 200 &&
+      !("commission_rate" in (staffGet.json.event || {})) &&
+      !("fixed_fee" in (staffGet.json.event || {})) &&
+      Boolean(staffGet.json.event?.name),
+    staffGet.json.error,
+  );
+  await expect(
+    "event-admin get PART_TIMER 계약금액 미노출",
+    partGet.status === 200 && !("commission_rate" in (partGet.json.event || {})) && !("fixed_fee" in (partGet.json.event || {})),
+    partGet.json.error,
+  );
+  await expect("미배정 event 접근 실패", (staffOther.data || []).length === 0);
+
   const posBefore = await secret.from("inventory_positions").select("id, estimated_units");
   const posBeforeKey = JSON.stringify((posBefore.data || []).map((row) => [row.id, String(row.estimated_units)]).sort());
 
@@ -461,9 +501,11 @@ async function main() {
       !("estimated_profit" in (staffSum.json.summary || {})) &&
       !("estimated_product_cost" in (staffSum.json.summary || {})) &&
       !("commission_amount" in (staffSum.json.summary || {})) &&
+      !("booth_fee" in (staffSum.json.summary || {})) &&
       Boolean(staffRpc.error) &&
       partSum.status === 200 &&
-      !("estimated_profit" in (partSum.json.summary || {})),
+      !("estimated_profit" in (partSum.json.summary || {})) &&
+      !("booth_fee" in (partSum.json.summary || {})),
     staffSum.json.error || staffRpc.error?.message,
   );
 

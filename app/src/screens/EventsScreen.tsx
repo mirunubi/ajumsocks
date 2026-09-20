@@ -32,7 +32,9 @@ export function EventsScreen() {
   useEffect(() => {
     void supabase
       .from("events")
-      .select("*, event_members(count)")
+      .select(
+        "id, name, starts_at, ends_at, status, venue_name, address, address_detail, memo, contract_type, contract_memo, created_by, created_at, updated_at, event_members(count)",
+      )
       .then(({ data, error }) => {
         if (error) setMessage(error.message);
         else setEvents((data ?? []) as EventRecord[]);
