@@ -10,6 +10,7 @@ Purpose: reopen this project on a new PC months later and run or deploy it. Comm
 * Branch: `main`
 * Migration source of truth: `supabase/migrations/` (append-only; do not edit applied files)
 * Database name: platform default `postgres` (local and hosted; do not rename)
+* Roadmap / Freeze: `docs/MVP_ROADMAP.md`
 
 App tables live in `public`. Privileged helpers live in `private`.
 

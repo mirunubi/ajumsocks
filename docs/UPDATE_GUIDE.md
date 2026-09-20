@@ -4,6 +4,8 @@ How to change this repo without breaking the current Domain boundaries.
 
 Baseline: commit `84e22cc`, Phase 0–8 and E2E passing, Phase 9 not started. CatchMenu-scale governance is out of scope. Prefer updating existing stable docs over adding a new plan file for every feature.
 
+Web MVP v1.0 completion, Pilot, Freeze, and Phase 9 start conditions: `docs/MVP_ROADMAP.md` (feature baseline `a6c253a`).
+
 ---
 
 ## Change procedure
@@ -210,5 +212,6 @@ Add a **new** standalone doc only when:
 * a migration is unusually complex
 * a design review needs a dedicated write-up
 * operations need a separate runbook
+* completion / freeze / phase-start criteria need a dedicated write-up (`docs/MVP_ROADMAP.md`)
 
 Phase plan files already in `docs/` are historical. New work does not require a new `NN_PHASEx_...` file by default.
