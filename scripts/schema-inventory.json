@@ -1,0 +1,442 @@
+{
+  "public_table_count": 40,
+  "public_fk_count": 96,
+  "public_enum_count": 7,
+  "tables": [
+    "assortment_set_rules",
+    "assortment_sets",
+    "attribute_definitions",
+    "audit_logs",
+    "colors",
+    "event_assortment_items",
+    "event_assortments",
+    "event_contacts",
+    "event_daily_sales",
+    "event_expense_receipts",
+    "event_expenses",
+    "event_financial_inputs",
+    "event_inventory_check_items",
+    "event_inventory_checks",
+    "event_inventory_current",
+    "event_members",
+    "event_photos",
+    "event_preparation_items",
+    "event_preparation_plans",
+    "events",
+    "expense_categories",
+    "inventory_adjustments",
+    "inventory_locations",
+    "inventory_movement_counters",
+    "inventory_movement_items",
+    "inventory_movements",
+    "inventory_positions",
+    "invites",
+    "preparation_items",
+    "preparation_set_items",
+    "preparation_sets",
+    "product_attribute_values",
+    "product_categories",
+    "product_images",
+    "product_tags",
+    "product_variants",
+    "products",
+    "profiles",
+    "sizes",
+    "tags"
+  ],
+  "enums": [
+    "app_role",
+    "event_assignment_role",
+    "event_contact_type",
+    "event_contract_type",
+    "event_status",
+    "preparation_item_type",
+    "preparation_status"
+  ],
+  "fks": [
+    {
+      "from_table": "assortment_set_rules",
+      "def": "FOREIGN KEY (assortment_set_id) REFERENCES assortment_sets(id) ON DELETE CASCADE"
+    },
+    {
+      "from_table": "assortment_set_rules",
+      "def": "FOREIGN KEY (category_id) REFERENCES product_categories(id) ON DELETE RESTRICT"
+    },
+    {
+      "from_table": "assortment_set_rules",
+      "def": "FOREIGN KEY (color_id) REFERENCES colors(id) ON DELETE RESTRICT"
+    },
+    {
+      "from_table": "assortment_set_rules",
+      "def": "FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE RESTRICT"
+    },
+    {
+      "from_table": "assortment_set_rules",
+      "def": "FOREIGN KEY (product_variant_id) REFERENCES product_variants(id) ON DELETE RESTRICT"
+    },
+    {
+      "from_table": "assortment_set_rules",
+      "def": "FOREIGN KEY (size_id) REFERENCES sizes(id) ON DELETE RESTRICT"
+    },
+    {
+      "from_table": "assortment_set_rules",
+      "def": "FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE RESTRICT"
+    },
+    {
+      "from_table": "assortment_sets",
+      "def": "FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL"
+    },
+    {
+      "from_table": "audit_logs",
+      "def": "FOREIGN KEY (actor_profile_id) REFERENCES profiles(id) ON DELETE SET NULL"
+    },
+    {
+      "from_table": "audit_logs",
+      "def": "FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE RESTRICT"
+    },
+    {
+      "from_table": "event_assortment_items",
+      "def": "FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL"
+    },
+    {
+      "from_table": "event_assortment_items",
+      "def": "FOREIGN KEY (event_assortment_id) REFERENCES event_assortments(id) ON DELETE RESTRICT"
+    },
+    {
+      "from_table": "event_assortment_items",
+      "def": "FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE RESTRICT"
+    },
+    {
+      "from_table": "event_assortment_items",
+      "def": "FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE RESTRICT"
+    },
+    {
+      "from_table": "event_assortment_items",
+      "def": "FOREIGN KEY (product_variant_id) REFERENCES product_variants(id) ON DELETE RESTRICT"
+    },
+    {
+      "from_table": "event_assortment_items",
+      "def": "FOREIGN KEY (source_rule_id) REFERENCES assortment_set_rules(id) ON DELETE SET NULL"
+    },
+    {
+      "from_table": "event_assortments",
+      "def": "FOREIGN KEY (applied_by) REFERENCES profiles(id) ON DELETE SET NULL"
+    },
+    {
+      "from_table": "event_assortments",
+      "def": "FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE RESTRICT"
+    },
+    {
+      "from_table": "event_assortments",
+      "def": "FOREIGN KEY (source_assortment_set_id) REFERENCES assortment_sets(id) ON DELETE RESTRICT"
+    },
+    {
+      "from_table": "event_contacts",
+      "def": "FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE"
+    },
+    {
+      "from_table": "event_daily_sales",
+      "def": "FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL"
+    },
+    {
+      "from_table": "event_daily_sales",
+      "def": "FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE RESTRICT"
+    },
+    {
+      "from_table": "event_daily_sales",
+      "def": "FOREIGN KEY (updated_by) REFERENCES profiles(id) ON DELETE SET NULL"
+    },
+    {
+      "from_table": "event_expense_receipts",
+      "def": "FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE RESTRICT"
+    },
+    {
+      "from_table": "event_expense_receipts",
+      "def": "FOREIGN KEY (expense_id) REFERENCES event_expenses(id) ON DELETE RESTRICT"
+    },
+    {
+      "from_table": "event_expense_receipts",
+      "def": "FOREIGN KEY (uploaded_by) REFERENCES profiles(id) ON DELETE SET NULL"
+    },
+    {
+      "from_table": "event_expenses",
+      "def": "FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL"
+    },
+    {
+      "from_table": "event_expenses",
+      "def": "FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE RESTRICT"
+    },
+    {
+      "from_table": "event_expenses",
+      "def": "FOREIGN KEY (expense_category_id) REFERENCES expense_categories(id) ON DELETE RESTRICT"
+    },
+    {
+      "from_table": "event_expenses",
+      "def": "FOREIGN KEY (updated_by) REFERENCES profiles(id) ON DELETE SET NULL"
+    },
+    {
+      "from_table": "event_expenses",
+      "def": "FOREIGN KEY (voided_by) REFERENCES profiles(id) ON DELETE SET NULL"
+    },
+    {
+      "from_table": "event_financial_inputs",
+      "def": "FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE RESTRICT"
+    },
+    {
+      "from_table": "event_financial_inputs",
+      "def": "FOREIGN KEY (updated_by) REFERENCES profiles(id) ON DELETE SET NULL"
+    },
+    {
+      "from_table": "event_inventory_check_items",
+      "def": "FOREIGN KEY (checked_by) REFERENCES profiles(id) ON DELETE SET NULL"
+    },
+    {
+      "from_table": "event_inventory_check_items",
+      "def": "FOREIGN KEY (event_assortment_item_id) REFERENCES event_assortment_items(id) ON DELETE RESTRICT"
+    },
+    {
+      "from_table": "event_inventory_check_items",
+      "def": "FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE RESTRICT"
+    },
+    {
+      "from_table": "event_inventory_check_items",
+      "def": "FOREIGN KEY (inventory_check_id) REFERENCES event_inventory_checks(id) ON DELETE RESTRICT"
+    },
+    {
+      "from_table": "event_inventory_check_items",
+      "def": "FOREIGN KEY (product_variant_id) REFERENCES product_variants(id) ON DELETE RESTRICT"
+    },
+    {
+      "from_table": "event_inventory_checks",
+      "def": "FOREIGN KEY (confirmed_by) REFERENCES profiles(id) ON DELETE SET NULL"
+    },
+    {
+      "from_table": "event_inventory_checks",
+      "def": "FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE RESTRICT"
+    },
+    {
+      "from_table": "event_inventory_checks",
+      "def": "FOREIGN KEY (started_by) REFERENCES profiles(id) ON DELETE SET NULL"
+    },
+    {
+      "from_table": "event_inventory_current",
+      "def": "FOREIGN KEY (event_assortment_item_id) REFERENCES event_assortment_items(id) ON DELETE RESTRICT"
+    },
+    {
+      "from_table": "event_inventory_current",
+      "def": "FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE RESTRICT"
+    },
+    {
+      "from_table": "event_inventory_current",
+      "def": "FOREIGN KEY (product_variant_id) REFERENCES product_variants(id) ON DELETE RESTRICT"
+    },
+    {
+      "from_table": "event_inventory_current",
+      "def": "FOREIGN KEY (source_check_id) REFERENCES event_inventory_checks(id) ON DELETE RESTRICT"
+    },
+    {
+      "from_table": "event_inventory_current",
+      "def": "FOREIGN KEY (updated_by) REFERENCES profiles(id) ON DELETE SET NULL"
+    },
+    {
+      "from_table": "event_members",
+      "def": "FOREIGN KEY (created_by) REFERENCES profiles(id)"
+    },
+    {
+      "from_table": "event_members",
+      "def": "FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE RESTRICT"
+    },
+    {
+      "from_table": "event_members",
+      "def": "FOREIGN KEY (profile_id) REFERENCES profiles(id) ON DELETE RESTRICT"
+    },
+    {
+      "from_table": "event_photos",
+      "def": "FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE RESTRICT"
+    },
+    {
+      "from_table": "event_photos",
+      "def": "FOREIGN KEY (uploaded_by) REFERENCES profiles(id)"
+    },
+    {
+      "from_table": "event_preparation_items",
+      "def": "FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE RESTRICT"
+    },
+    {
+      "from_table": "event_preparation_items",
+      "def": "FOREIGN KEY (plan_id) REFERENCES event_preparation_plans(id) ON DELETE RESTRICT"
+    },
+    {
+      "from_table": "event_preparation_items",
+      "def": "FOREIGN KEY (source_preparation_item_id) REFERENCES preparation_items(id) ON DELETE RESTRICT"
+    },
+    {
+      "from_table": "event_preparation_items",
+      "def": "FOREIGN KEY (updated_by) REFERENCES profiles(id)"
+    },
+    {
+      "from_table": "event_preparation_plans",
+      "def": "FOREIGN KEY (applied_by) REFERENCES profiles(id)"
+    },
+    {
+      "from_table": "event_preparation_plans",
+      "def": "FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE RESTRICT"
+    },
+    {
+      "from_table": "event_preparation_plans",
+      "def": "FOREIGN KEY (source_preparation_set_id) REFERENCES preparation_sets(id) ON DELETE RESTRICT"
+    },
+    {
+      "from_table": "events",
+      "def": "FOREIGN KEY (created_by) REFERENCES profiles(id)"
+    },
+    {
+      "from_table": "inventory_adjustments",
+      "def": "FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL"
+    },
+    {
+      "from_table": "inventory_adjustments",
+      "def": "FOREIGN KEY (location_id) REFERENCES inventory_locations(id) ON DELETE RESTRICT"
+    },
+    {
+      "from_table": "inventory_adjustments",
+      "def": "FOREIGN KEY (product_variant_id) REFERENCES product_variants(id) ON DELETE RESTRICT"
+    },
+    {
+      "from_table": "inventory_locations",
+      "def": "FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL"
+    },
+    {
+      "from_table": "inventory_locations",
+      "def": "FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE RESTRICT"
+    },
+    {
+      "from_table": "inventory_movement_items",
+      "def": "FOREIGN KEY (inventory_movement_id) REFERENCES inventory_movements(id) ON DELETE RESTRICT"
+    },
+    {
+      "from_table": "inventory_movement_items",
+      "def": "FOREIGN KEY (product_variant_id) REFERENCES product_variants(id) ON DELETE RESTRICT"
+    },
+    {
+      "from_table": "inventory_movements",
+      "def": "FOREIGN KEY (cancelled_by) REFERENCES profiles(id) ON DELETE SET NULL"
+    },
+    {
+      "from_table": "inventory_movements",
+      "def": "FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL"
+    },
+    {
+      "from_table": "inventory_movements",
+      "def": "FOREIGN KEY (destination_location_id) REFERENCES inventory_locations(id) ON DELETE RESTRICT"
+    },
+    {
+      "from_table": "inventory_movements",
+      "def": "FOREIGN KEY (dispatched_by) REFERENCES profiles(id) ON DELETE SET NULL"
+    },
+    {
+      "from_table": "inventory_movements",
+      "def": "FOREIGN KEY (received_by) REFERENCES profiles(id) ON DELETE SET NULL"
+    },
+    {
+      "from_table": "inventory_movements",
+      "def": "FOREIGN KEY (source_event_inventory_check_id) REFERENCES event_inventory_checks(id) ON DELETE SET NULL"
+    },
+    {
+      "from_table": "inventory_movements",
+      "def": "FOREIGN KEY (source_location_id) REFERENCES inventory_locations(id) ON DELETE RESTRICT"
+    },
+    {
+      "from_table": "inventory_positions",
+      "def": "FOREIGN KEY (last_physical_check_id) REFERENCES event_inventory_checks(id) ON DELETE SET NULL"
+    },
+    {
+      "from_table": "inventory_positions",
+      "def": "FOREIGN KEY (location_id) REFERENCES inventory_locations(id) ON DELETE RESTRICT"
+    },
+    {
+      "from_table": "inventory_positions",
+      "def": "FOREIGN KEY (product_variant_id) REFERENCES product_variants(id) ON DELETE RESTRICT"
+    },
+    {
+      "from_table": "inventory_positions",
+      "def": "FOREIGN KEY (updated_by) REFERENCES profiles(id) ON DELETE SET NULL"
+    },
+    {
+      "from_table": "invites",
+      "def": "FOREIGN KEY (created_by) REFERENCES profiles(id)"
+    },
+    {
+      "from_table": "invites",
+      "def": "FOREIGN KEY (profile_id) REFERENCES profiles(id) ON DELETE CASCADE"
+    },
+    {
+      "from_table": "preparation_items",
+      "def": "FOREIGN KEY (created_by) REFERENCES profiles(id)"
+    },
+    {
+      "from_table": "preparation_set_items",
+      "def": "FOREIGN KEY (preparation_item_id) REFERENCES preparation_items(id) ON DELETE RESTRICT"
+    },
+    {
+      "from_table": "preparation_set_items",
+      "def": "FOREIGN KEY (preparation_set_id) REFERENCES preparation_sets(id) ON DELETE CASCADE"
+    },
+    {
+      "from_table": "preparation_sets",
+      "def": "FOREIGN KEY (created_by) REFERENCES profiles(id)"
+    },
+    {
+      "from_table": "product_attribute_values",
+      "def": "FOREIGN KEY (attribute_definition_id) REFERENCES attribute_definitions(id) ON DELETE RESTRICT"
+    },
+    {
+      "from_table": "product_attribute_values",
+      "def": "FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE RESTRICT"
+    },
+    {
+      "from_table": "product_categories",
+      "def": "FOREIGN KEY (parent_id) REFERENCES product_categories(id) ON DELETE RESTRICT"
+    },
+    {
+      "from_table": "product_images",
+      "def": "FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE RESTRICT"
+    },
+    {
+      "from_table": "product_images",
+      "def": "FOREIGN KEY (uploaded_by) REFERENCES profiles(id) ON DELETE SET NULL"
+    },
+    {
+      "from_table": "product_tags",
+      "def": "FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE RESTRICT"
+    },
+    {
+      "from_table": "product_tags",
+      "def": "FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE RESTRICT"
+    },
+    {
+      "from_table": "product_variants",
+      "def": "FOREIGN KEY (primary_color_id) REFERENCES colors(id) ON DELETE RESTRICT"
+    },
+    {
+      "from_table": "product_variants",
+      "def": "FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE RESTRICT"
+    },
+    {
+      "from_table": "product_variants",
+      "def": "FOREIGN KEY (size_id) REFERENCES sizes(id) ON DELETE RESTRICT"
+    },
+    {
+      "from_table": "products",
+      "def": "FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL"
+    },
+    {
+      "from_table": "products",
+      "def": "FOREIGN KEY (primary_category_id) REFERENCES product_categories(id) ON DELETE SET NULL"
+    },
+    {
+      "from_table": "profiles",
+      "def": "FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE"
+    }
+  ]
+}
