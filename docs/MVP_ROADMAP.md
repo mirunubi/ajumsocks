@@ -15,7 +15,7 @@ Architecture, Schema, Security의 현재 구현 설명은 이 문서에 다시 �
 | Field | Value |
 | --- | --- |
 | Current MVP Baseline | `fd66f7e` (`fix: close web MVP pilot gaps`) |
-| Included | Phase 0 ~ Phase 8.5, MVP 운영개선 01, P1 Gap Fix |
+| Included | Phase 0 ~ Phase 8.5, MVP 운영개선 01, P1 Gap Fix, MVP 운영개선 02 |
 | Status | READY FOR PILOT |
 | Real Event Pilot | NEXT |
 | Phase 9 | not started |
@@ -60,16 +60,18 @@ STAFF/PART_TIMER는 자신에게 배정된 행사에서 허용된 현장업무�
 * 행사 등록
 * 행사명, 행사장, 주최자, 주소
 * 시작일 / 종료일, 시작시간 / 종료시간 (화면 분리, DB는 `starts_at` / `ends_at`)
-* 상태
+* 상태 (PREPARING / ACTIVE / ENDED / SETTLED / CANCELLED)
+* 일정 확정 (`schedule_status` TENTATIVE / CONFIRMED, lifecycle과 분리)
 * 직원/알바 배정
-* 행사 상세
+* 행사 상세 (행사정보 / 행사준비 / 세팅·이동 / 재고 / 매출·지출)
 
 ### Calendar
 
 * 관리자 월간 Calendar
 * 다일 행사
-* Organizer Color
-* Organizer Filter
+* Organizer Color (확정 행사)
+* 예정 행사 회색/`예정` badge
+* Organizer Filter, 확정/예정 필터
 * Mobile 대응 (셀 bar 숨김 + 선택일 목록)
 
 ### Preparation
@@ -91,6 +93,16 @@ STAFF/PART_TIMER는 자신에게 배정된 행사에서 허용된 현장업무�
 * Inventory Location / Position / Movement
 * 출발 / 수령
 * Event Closing Distribution
+
+### Setup / Operation
+
+* Setup session 계획/도착/완료
+* 설치 집기 mm Snapshot, 계획/실제 수량
+* 도착·완료 사진 (`setup-photos`)
+* 원본 서버시각 vs ADMIN 보정
+* Operation location master
+* Event/거점 이동 구간 (GEAR / CREW / BOTH)
+* AI 예측·지도 API는 없음
 
 ### Finance
 
@@ -367,6 +379,7 @@ Phase 9 후보 (상세 설계하지 않음):
 | --- | --- |
 | Phase 0~8.5 | COMPLETE |
 | MVP 운영개선 01 | COMPLETE |
+| MVP 운영개선 02 | COMPLETE |
 | Web MVP Gap Check | COMPLETE — `docs/MVP_GAP_CHECK.md` |
 | Web MVP Gap Fix | COMPLETE |
 | Pilot Rehearsal | COMPLETE — `docs/PILOT_REHEARSAL.md` (GO FOR REAL PILOT; 실제 행사 미착수) |

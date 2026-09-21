@@ -1,10 +1,10 @@
 # Architecture
 
-Source: live PostgreSQL after migrations through `20260920160000_event_organizers.sql`, plus current Edge Functions and `app/` code.
+Source: live PostgreSQL after migrations through `20260921120000_event_operations.sql`, plus current Edge Functions and `app/` code.
 
 This document describes **what is implemented now**. It is not a roadmap. Supplier / Purchase Order / Shipment / POS / automatic COGS tables and flows do not exist and are not documented as current behavior.
 
-Public business tables: **43**. Cross-check: `docs/SCHEMA_INVENTORY.md`, `docs/ERD.md`.
+Public business tables: **49**. Cross-check: `docs/SCHEMA_INVENTORY.md`, `docs/ERD.md`.
 
 ---
 
@@ -48,17 +48,17 @@ Browser env is only `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`. The
 
 ### Event
 
-* **책임:** 외부 판매 행사 헤더, 배정, 외부 담당자, 행사 사진, 계약 필드, 운영 status.
+* **책임:** 외부 판매 행사 헤더, 배정, 외부 담당자, 행사 사진, 계약 필드, 운영 status, 일정 확정상태.
 * **주요 Table:** `events`, `event_members`, `event_contacts`, `event_photos`, `event_organizers`, `event_organizer_terms`, `event_organizer_contacts`
 * **주요 Edge Function:** `event-admin`, `event-photos`, `organizer-admin`
-* **연결:** Preparation / Assortment / Inventory / Finance / Audit가 모두 `events.id`를 가리킨다. INSERT 시 EVENT `inventory_locations` 행이 트리거로 생긴다. Dates do not auto-change `status`. Organizer 기본 계약/담당자는 행사 생성 시 Snapshot만 한다.
+* **연결:** Preparation / Assortment / Inventory / Finance / Audit / Setup가 모두 `events.id`를 가리킨다. INSERT 시 EVENT `inventory_locations` 행이 트리거로 생긴다. Dates do not auto-change `status`. `schedule_status` (TENTATIVE/CONFIRMED)는 lifecycle과 별개. Organizer 기본 계약/담당자는 행사 생성 시 Snapshot만 한다.
 
 ### Preparation
 
 * **책임:** 집기·소모품 마스터와 세트 템플릿, 행사별 Snapshot.
 * **주요 Table:** `preparation_items`, `preparation_sets`, `preparation_set_items`, `event_preparation_plans`, `event_preparation_items`
 * **주요 Edge Function:** `prep-admin`
-* **연결:** Event. 판매 SKU / 재고 수량과 무관.
+* **연결:** Event. 판매 SKU / 재고 수량과 무관. Setup fixture가 optional `preparation_item_id`로 연결할 수 있으나 설치 치수는 fixture snapshot.
 
 ### Product
 
@@ -86,7 +86,14 @@ Browser env is only `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`. The
 * **책임:** 장소, 운영 예상재고, 장소 간 이동, 수동 Adjustment, 종료 재고 분배.
 * **주요 Table:** `inventory_locations`, `inventory_positions`, `inventory_movements`, `inventory_movement_items`, `inventory_adjustments`, `inventory_movement_counters`
 * **주요 Edge Function:** `inventory-movement`
-* **연결:** Event → EVENT location. Check confirm → Positions. Movement는 Current를 바꾸지 않는다.
+* **연결:** Event → EVENT location. Check confirm → Positions. Movement는 Current를 바꾸지 않는다. `operation_locations`와 다른 Domain.
+
+### Setup / Transition
+
+* **책임:** 세팅 계획·설치 물량·도착/완료 증빙·사람/짐 이동. AI 예측은 하지 않고 raw operation data만 남긴다.
+* **주요 Table:** `event_setup_sessions`, `event_setup_fixtures`, `event_setup_members`, `event_setup_photos`, `operation_locations`, `event_transition_legs`
+* **주요 Edge Function:** `event-ops`
+* **연결:** Session → Event. Fixture mm snapshot. Photos bucket `setup-photos`. Transition XOR endpoints (event or operation location). Inventory movement와 합치지 않음.
 
 ### Finance
 
@@ -97,10 +104,10 @@ Browser env is only `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`. The
 
 ### Audit
 
-* **책임:** Finance 원본 변경이력 (CREATE / UPDATE / VOID).
+* **책임:** Finance 원본 변경이력과 Setup 시간보정 이력 (CREATE / UPDATE / VOID).
 * **주요 Table:** `audit_logs`
-* **주요 Edge Function:** `event-finance` (`get-audit-log`, 쓰기는 finance RPC의 `private.write_audit`)
-* **연결:** `event_id` nullable. `entity_type`은 `DAILY_SALES` / `EXPENSE` / `PRODUCT_COST`만.
+* **주요 Edge Function:** `event-finance` (`get-audit-log`, 쓰기는 finance RPC의 `private.write_audit`), `event-ops` (`adjust-times`가 SETUP_SESSION 행 INSERT)
+* **연결:** `event_id` nullable. `entity_type`은 `DAILY_SALES` / `EXPENSE` / `PRODUCT_COST` / `SETUP_SESSION`.
 
 ---
 
@@ -195,7 +202,7 @@ Edge는 Secret Key 클라이언트(`supabase/functions/_shared/supabase.ts`)로 
 | --- | --- | --- |
 | `invite-accept` | preview / accept (JWT 없이 토큰) | 초대 수락 시 Auth 사용자 + profile 활성 |
 | `user-admin` | 없음 | ADMIN only |
-| `event-admin` | `get` = 배정 또는 ADMIN | create/update/status/add-member/remove-member/contact = ADMIN |
+| `event-admin` | `get` / `calendar` = 배정 또는 ADMIN | create/update/status/set-schedule-status/add-member/remove-member/contact = ADMIN |
 | `event-photos` | 배정자 업로드 | delete = ADMIN |
 | `prep-admin` | `get-event`, `set-status` = 배정 또는 ADMIN | 템플릿·apply·snapshot 구조 변경 = ADMIN |
 | `product-admin` | `list-masters` / `list-products` / `get` = app access | 나머지 = ADMIN |
@@ -204,6 +211,7 @@ Edge는 Secret Key 클라이언트(`supabase/functions/_shared/supabase.ts`)로 
 | `inventory-movement` | 목록/조회: ADMIN 또는 EVENT location 배정 | location/draft/adjustment/closing = ADMIN. dispatch = ADMIN 또는 출발 EVENT 배정. receive = ADMIN 또는 도착 EVENT 배정 |
 | `event-finance` | 매출/지출/요약(원가·손익 제외) = 배정 | void/receipt delete/원가/audit/dashboard/category upsert = ADMIN |
 | `organizer-admin` | 없음 | ADMIN only. STAFF는 `event_organizers` 이름/색상 SELECT만 |
+| `event-ops` | `get-setup` / 사진 complete / actuals = 배정 또는 ADMIN | 계획·집기계획·멤버·거점·이동계획·시간보정 = ADMIN. raw timestamp 수정 경로 없음 |
 
 `service_role` 전용 RPC (anon/authenticated EXECUTE 없음):
 
@@ -233,6 +241,7 @@ Live `storage.buckets` (private, 10 MiB, image MIME):
 | `event-photos` | `event_photos` | `{event_id}/…` | `event-photos` |
 | `product-images` | `product_images` | `{product_id}/…` | `product-admin` |
 | `expense-receipts` | `event_expense_receipts` | `{event_id}/…` | `event-finance` |
+| `setup-photos` | `event_setup_photos` | `{event_id}/{session_id}/{type}/…` | `event-ops` |
 
 다른 bucket은 없다. Object는 public이 아니며 읽기는 signed URL 또는 Storage RLS SELECT다.
 
@@ -240,3 +249,4 @@ Storage RLS:
 
 * `event-photos` / `expense-receipts`: SELECT·INSERT = `can_read_event` on folder UUID. DELETE = `can_write_event` (ADMIN)
 * `product-images`: SELECT = `has_app_access`. INSERT·DELETE = ADMIN
+* `setup-photos`: SELECT·INSERT = `can_read_event` on first folder UUID. DELETE 정책 없음

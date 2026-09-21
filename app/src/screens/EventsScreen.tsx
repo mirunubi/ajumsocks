@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { formatKstRange, scheduleHint } from "../lib/datetime";
 import { EVENT_STATUS_LABEL, memberCount, type EventRecord, type EventStatus } from "../lib/events";
+import { SCHEDULE_STATUS_LABEL } from "../lib/operations";
 import { supabase } from "../lib/supabase";
 
 const STATUS_FILTERS: Array<{ id: "ALL" | EventStatus; label: string }> = [
@@ -33,7 +34,7 @@ export function EventsScreen() {
     void supabase
       .from("events")
       .select(
-        "id, name, starts_at, ends_at, status, venue_name, address, address_detail, memo, contract_type, contract_memo, organizer_id, created_by, created_at, updated_at, event_members(count)",
+        "id, name, starts_at, ends_at, status, schedule_status, venue_name, address, address_detail, memo, contract_type, contract_memo, organizer_id, created_by, created_at, updated_at, event_members(count)",
       )
       .then(({ data, error }) => {
         if (error) setMessage(error.message);
@@ -83,6 +84,7 @@ export function EventsScreen() {
             <div>{formatKstRange(event.starts_at, event.ends_at)}</div>
             <div>
               <span className="badge">{EVENT_STATUS_LABEL[event.status]}</span>
+              {event.schedule_status === "TENTATIVE" ? <span className="badge">{SCHEDULE_STATUS_LABEL.TENTATIVE}</span> : null}
               <span className="badge">{scheduleHint(event.starts_at, event.ends_at)}</span>
               <span className="badge">배정 {memberCount(event)}명</span>
             </div>

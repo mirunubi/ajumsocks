@@ -604,6 +604,28 @@ h3.section-title {
   text-decoration: line-through;
 }
 
+.cal-bar.tentative {
+  background: #e5e7eb;
+  color: #374151;
+  border: 1px dashed #9ca3af;
+  border-left-width: 4px;
+  border-left-style: solid;
+}
+
+.cal-dot {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 999px;
+  display: inline-block;
+  margin-right: 0.25rem;
+  vertical-align: middle;
+}
+
+.tentative-card {
+  background: #f3f4f6;
+  border-style: dashed;
+}
+
 .cal-status {
   display: inline-block;
   margin-right: 0.25rem;

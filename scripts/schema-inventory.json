@@ -1,7 +1,7 @@
 {
-  "public_table_count": 43,
-  "public_fk_count": 101,
-  "public_enum_count": 7,
+  "public_table_count": 49,
+  "public_fk_count": 115,
+  "public_enum_count": 14,
   "tables": [
     "assortment_set_rules",
     "assortment_sets",
@@ -25,6 +25,11 @@
     "event_photos",
     "event_preparation_items",
     "event_preparation_plans",
+    "event_setup_fixtures",
+    "event_setup_members",
+    "event_setup_photos",
+    "event_setup_sessions",
+    "event_transition_legs",
     "events",
     "expense_categories",
     "inventory_adjustments",
@@ -34,6 +39,7 @@
     "inventory_movements",
     "inventory_positions",
     "invites",
+    "operation_locations",
     "preparation_items",
     "preparation_set_items",
     "preparation_sets",
@@ -52,9 +58,16 @@
     "event_assignment_role",
     "event_contact_type",
     "event_contract_type",
+    "event_schedule_status",
     "event_status",
+    "operation_location_type",
     "preparation_item_type",
-    "preparation_status"
+    "preparation_status",
+    "setup_fixture_type",
+    "setup_member_role",
+    "setup_photo_type",
+    "setup_session_status",
+    "transition_movement_subject"
   ],
   "fks": [
     {
@@ -306,6 +319,58 @@
       "def": "FOREIGN KEY (source_preparation_set_id) REFERENCES preparation_sets(id) ON DELETE RESTRICT"
     },
     {
+      "from_table": "event_setup_fixtures",
+      "def": "FOREIGN KEY (preparation_item_id) REFERENCES preparation_items(id) ON DELETE SET NULL"
+    },
+    {
+      "from_table": "event_setup_fixtures",
+      "def": "FOREIGN KEY (setup_session_id) REFERENCES event_setup_sessions(id) ON DELETE RESTRICT"
+    },
+    {
+      "from_table": "event_setup_members",
+      "def": "FOREIGN KEY (profile_id) REFERENCES profiles(id) ON DELETE RESTRICT"
+    },
+    {
+      "from_table": "event_setup_members",
+      "def": "FOREIGN KEY (setup_session_id) REFERENCES event_setup_sessions(id) ON DELETE RESTRICT"
+    },
+    {
+      "from_table": "event_setup_photos",
+      "def": "FOREIGN KEY (captured_by) REFERENCES profiles(id) ON DELETE SET NULL"
+    },
+    {
+      "from_table": "event_setup_photos",
+      "def": "FOREIGN KEY (setup_session_id) REFERENCES event_setup_sessions(id) ON DELETE RESTRICT"
+    },
+    {
+      "from_table": "event_setup_sessions",
+      "def": "FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL"
+    },
+    {
+      "from_table": "event_setup_sessions",
+      "def": "FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE RESTRICT"
+    },
+    {
+      "from_table": "event_transition_legs",
+      "def": "FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL"
+    },
+    {
+      "from_table": "event_transition_legs",
+      "def": "FOREIGN KEY (from_event_id) REFERENCES events(id) ON DELETE RESTRICT"
+    },
+    {
+      "from_table": "event_transition_legs",
+      "def": "FOREIGN KEY (from_operation_location_id) REFERENCES operation_locations(id) ON DELETE RESTRICT"
+    },
+    {
+      "from_table": "event_transition_legs",
+      "def": "FOREIGN KEY (to_event_id) REFERENCES events(id) ON DELETE RESTRICT"
+    },
+    {
+      "from_table": "event_transition_legs",
+      "def": "FOREIGN KEY (to_operation_location_id) REFERENCES operation_locations(id) ON DELETE RESTRICT"
+    },
+    {
       "from_table": "events",
       "def": "FOREIGN KEY (created_by) REFERENCES profiles(id)"
     },
@@ -392,6 +457,10 @@
     {
       "from_table": "invites",
       "def": "FOREIGN KEY (profile_id) REFERENCES profiles(id) ON DELETE CASCADE"
+    },
+    {
+      "from_table": "operation_locations",
+      "def": "FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL"
     },
     {
       "from_table": "preparation_items",

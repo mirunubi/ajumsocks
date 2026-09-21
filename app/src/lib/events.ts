@@ -1,3 +1,5 @@
+import type { ScheduleStatus } from "./operations";
+
 export type EventStatus = "PREPARING" | "ACTIVE" | "ENDED" | "SETTLED" | "CANCELLED";
 export type ContractType = "NONE" | "COMMISSION" | "FIXED_FEE" | "MIXED";
 export type AssignmentRole = "MANAGER" | "STAFF" | "PART_TIMER";
@@ -9,6 +11,7 @@ export type EventRecord = {
   starts_at: string;
   ends_at: string;
   status: EventStatus;
+  schedule_status?: ScheduleStatus;
   venue_name: string;
   address: string;
   address_detail: string | null;

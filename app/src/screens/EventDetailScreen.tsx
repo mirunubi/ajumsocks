@@ -24,8 +24,10 @@ import { EventAssortmentPanel } from "./EventAssortmentPanel";
 import { EventBasicsFields, type EventBasicsValue } from "./EventBasicsFields";
 import { EventFinancePanel } from "./EventFinancePanel";
 import { EventInventoryPanel } from "./EventInventoryPanel";
+import { EventSetupPanel } from "./EventSetupPanel";
 import { EventPrepPanel } from "./EventPrepPanel";
 import { formatE164Display } from "../lib/phone";
+import { SCHEDULE_STATUS_LABEL, type ScheduleStatus } from "../lib/operations";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../lib/session";
 
@@ -37,7 +39,7 @@ type Detail = {
   photos: EventPhoto[];
 };
 
-type Tab = "info" | "prep" | "inventory" | "finance";
+type Tab = "info" | "prep" | "ops" | "inventory" | "finance";
 
 async function copyText(value: string) {
   await navigator.clipboard.writeText(value);
@@ -215,6 +217,19 @@ export function EventDetailScreen() {
     }
   }
 
+  async function onSchedule(schedule_status: ScheduleStatus) {
+    setBusy(true);
+    setMessage(null);
+    try {
+      await callEventAdmin({ action: "set-schedule-status", id, schedule_status });
+      await refresh();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "일정 확정 변경 실패");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function onUpload(files: FileList | null) {
     if (!files?.length) return;
     setBusy(true);
@@ -313,6 +328,7 @@ export function EventDetailScreen() {
       <p className="muted">{event.venue_name}</p>
       <div>
         <span className="badge">{EVENT_STATUS_LABEL[event.status]}</span>
+        <span className="badge">{SCHEDULE_STATUS_LABEL[(event.schedule_status ?? "CONFIRMED") as ScheduleStatus]}</span>
         <span className="badge">{scheduleHint(event.starts_at, event.ends_at)}</span>
         <span className="badge">{organizer?.name || "주최자 미지정"}</span>
       </div>
@@ -325,6 +341,7 @@ export function EventDetailScreen() {
           [
             ["info", "행사정보"],
             ["prep", "행사준비"],
+            ["ops", "세팅·이동"],
             ["inventory", "재고"],
             ["finance", "매출·지출"],
           ] as Array<[Tab, string]>
@@ -560,7 +577,19 @@ export function EventDetailScreen() {
                 </option>
               ))}
             </select>
-            <p className="muted">날짜가 지나도 상태는 자동으로 바뀌지 않습니다. 영구삭제는 없습니다.</p>
+            <label>일정 확정</label>
+            <select
+              value={event.schedule_status ?? "CONFIRMED"}
+              disabled={busy}
+              onChange={(e) => void onSchedule(e.target.value as ScheduleStatus)}
+            >
+              {(Object.keys(SCHEDULE_STATUS_LABEL) as ScheduleStatus[]).map((key) => (
+                <option key={key} value={key}>
+                  {SCHEDULE_STATUS_LABEL[key]}
+                </option>
+              ))}
+            </select>
+            <p className="muted">날짜가 지나도 상태는 자동으로 바뀌지 않습니다. 예정/확정은 운영 상태와 별개입니다.</p>
           </section>
         </>
       ) : null}
@@ -575,6 +604,7 @@ export function EventDetailScreen() {
           <EventAssortmentPanel eventId={event.id} isAdmin={isAdmin} />
         </>
       ) : null}
+      {tab === "ops" ? <EventSetupPanel eventId={event.id} isAdmin={isAdmin} eventName={event.name} /> : null}
       {tab === "inventory" ? <EventInventoryPanel eventId={event.id} /> : null}
       {tab === "finance" ? (
         <EventFinancePanel eventId={event.id} isAdmin={isAdmin} startsAt={event.starts_at} endsAt={event.ends_at} />

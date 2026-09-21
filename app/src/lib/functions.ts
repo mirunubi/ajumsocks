@@ -70,3 +70,7 @@ export function callEventFinance(body: Record<string, unknown>) {
 export function callOrganizerAdmin(body: Record<string, unknown>) {
   return call("organizer-admin", body, true);
 }
+
+export function callEventOps(body: Record<string, unknown>) {
+  return call("event-ops", body, true);
+}

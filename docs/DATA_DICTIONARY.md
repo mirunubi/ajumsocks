@@ -1,8 +1,8 @@
 # Data Dictionary
 
-Source: live `pg_catalog` and `supabase/migrations/` through `20260920160000_event_organizers.sql`. Edge write paths are from `supabase/functions/`.
+Source: live `pg_catalog` and `supabase/migrations/` through `20260921120000_event_operations.sql`. Edge write paths are from `supabase/functions/`.
 
-Public business tables: **43**. Same set as `docs/SCHEMA_INVENTORY.md`. Future tables are not listed.
+Public business tables: **49**. Same set as `docs/SCHEMA_INVENTORY.md`. Future tables are not listed.
 
 Column dumps are omitted. Key fields are the identifiers and business-meaning columns.
 
@@ -41,6 +41,26 @@ Write pattern (all public business tables unless noted):
 * **재고 Check item:** `full_pack_count`/`remainder_level` NULL pair = 미실사. `remainder_level = ZERO` = 확인된 빈 재고.
 * **일매출:** 해당일 row 없음 = 미입력. row가 있고 금액 0 = 확인된 0원.
 * **상품원가:** `estimated_product_cost` NULL = 미입력 (손익 미완료). `0` = 확인된 0원.
+
+### Event lifecycle vs schedule_status
+
+* **`events.status`:** 운영 생명주기 PREPARING / ACTIVE / ENDED / SETTLED / CANCELLED.
+* **`events.schedule_status`:** 캘린더 확정 TENTATIVE / CONFIRMED. lifecycle enum에 넣지 않는다.
+
+### Inventory location vs operation location
+
+* **`inventory_locations`:** 재고가 있는 장소 (HQ / EVENT / TEMP / THIRD_PARTY).
+* **`operation_locations`:** 사람/짐 이동 거점 (사무실, 집, 숙소 등). 행사장은 `events.venue_name` / `address`.
+
+### Preparation vs setup fixture
+
+* **Preparation:** “무엇을 준비했는가” 마스터/행사 Snapshot.
+* **Setup fixture:** “이 세팅 세션에서 무엇을 몇 mm로 몇 개 설치했는가” 물리 Snapshot. `preparation_item_id`는 선택 연결.
+
+### Raw setup time vs adjusted time
+
+* **Raw:** `arrival_recorded_at` / `completed_recorded_at` / photo `recorded_at`. 서버 시각. 일반 UPDATE 불가.
+* **Adjusted:** ADMIN `adjusted_*` + `adjustment_reason`. Effective = adjusted ?? raw.
 
 ---
 
@@ -83,10 +103,10 @@ Purpose: Finance 변경이력. 앱이 직접 INSERT하지 않는다.
 Primary Key: `id`
 Main Foreign Keys: `event_id` → `events` RESTRICT (nullable); `actor_profile_id` → `profiles` SET NULL
 Key Fields: `entity_type`, `entity_id`, `action`, `before_data`, `after_data`, `reason`
-Important Constraints: `entity_type` in DAILY_SALES, EXPENSE, PRODUCT_COST; `action` in CREATE, UPDATE, VOID
-Write Authority: `private.write_audit` from finance RPCs. SELECT: ADMIN. Edge `get-audit-log` ADMIN
+Important Constraints: `entity_type` in DAILY_SALES, EXPENSE, PRODUCT_COST, SETUP_SESSION; `action` in CREATE, UPDATE, VOID
+Write Authority: `private.write_audit` from finance RPCs; Edge `event-ops` `adjust-times` inserts SETUP_SESSION. SELECT: ADMIN. Edge `get-audit-log` ADMIN
 Delete / History Policy: append-only. 물리 삭제 정책/클라이언트 경로 없음
-Important Notes: Inventory·Event 헤더 변경은 기록하지 않는다.
+Important Notes: Setup 원본 timestamp는 여기로 덮지 않는다. 보정값만 기록한다.
 
 ## colors
 
@@ -286,16 +306,71 @@ Write Authority: `prep-admin` apply-set (ADMIN)
 Delete / History Policy: 재적용 거부
 Important Notes: 템플릿 copy 후 수동 라인 추가 가능.
 
+## event_setup_fixtures
+
+Purpose: 행사 세팅 시 실제 설치 집기 Snapshot. 치수는 mm 정수.
+Primary Key: `id`
+Main Foreign Keys: `setup_session_id` RESTRICT; optional `preparation_item_id` SET NULL
+Key Fields: `fixture_type` (TABLE, RACK, DISPLAY, HANGER, SIGNAGE, OTHER), `name_snapshot`, `width_mm`, `depth_mm`, `height_mm`, `frontage_mm_per_unit`, `planned_quantity`, `actual_quantity`, `rack_levels`, `layout_note`
+Important Constraints: quantities >= 0; supplied mm/levels > 0
+Write Authority: `event-ops` add/update/remove-fixture. actual_quantity는 배정 STAFF/PART_TIMER도. 계획 필드는 ADMIN
+Delete / History Policy: 완료 세션 삭제는 거부. Master 크기 변경이 snapshot을 바꾸지 않음
+Important Notes: 전면길이 = `(frontage_mm_per_unit ?? width_mm) × quantity`. 요약 컬럼을 중복 저장하지 않음.
+
+## event_setup_members
+
+Purpose: 세팅 작업 인원. 근태/급여 아님.
+Primary Key: `id`
+Main Foreign Keys: `setup_session_id` RESTRICT, `profile_id` RESTRICT
+Key Fields: `role` (LEAD, MEMBER)
+Important Constraints: UNIQUE (session, profile)
+Write Authority: `event-ops` set-members (ADMIN)
+Delete / History Policy: 세션 단위 교체
+Important Notes: `planned_staff_count` / `actual_staff_count`는 세션 헤더 숫자.
+
+## event_setup_photos
+
+Purpose: 도착/완료 증빙 사진 메타. 바이트는 `setup-photos`.
+Primary Key: `id`
+Main Foreign Keys: `setup_session_id` RESTRICT; `captured_by` SET NULL
+Key Fields: `photo_type` (ARRIVAL, COMPLETION, OTHER), `storage_path`, `recorded_at`, `note`
+Important Constraints: UNIQUE `storage_path`; path not blank
+Write Authority: `event-ops` sign/complete-upload (배정 또는 ADMIN). UPDATE 트리거 금지
+Delete / History Policy: 원본 timestamp/촬영자 불변. Storage DELETE 정책 없음
+Important Notes: complete-upload가 서버 `now()`를 `recorded_at`과 session raw timestamp에 쓴다.
+
+## event_setup_sessions
+
+Purpose: 한 번의 세팅 작업 Session. 행사당 여러 행 허용.
+Primary Key: `id`
+Main Foreign Keys: `event_id` RESTRICT; `created_by` SET NULL
+Key Fields: `status` (PLANNED, ARRIVED, COMPLETED), `planned_start_at`, `planned_end_at`, `planned_staff_count`, `arrival_recorded_at`, `completed_recorded_at`, `adjusted_arrival_at`, `adjusted_completed_at`, `adjustment_reason`, `actual_staff_count`, `setup_notes`, `actual_notes`
+Important Constraints: planned_end >= planned_start; staff >= 0; raw completed >= arrival; adjusted order
+Write Authority: `event-ops`. 계획은 ADMIN. 실제 인원/노트는 배정자. 시간보정은 ADMIN. raw timestamp 컬럼 UPDATE 트리거 거부
+Delete / History Policy: raw는 사실기록. 보정은 별도 컬럼 + audit
+Important Notes: effective = adjusted ?? raw. 소요분 = effective completed − arrival. 요약 테이블 없음.
+
+## event_transition_legs
+
+Purpose: 행사↔거점 사람/짐 이동 구간. Inventory movement 아님.
+Primary Key: `id`
+Main Foreign Keys: `from_event_id`, `from_operation_location_id`, `to_event_id`, `to_operation_location_id` (각 XOR), `created_by`
+Key Fields: `movement_subject` (GEAR, CREW, BOTH), planned/actual departure/arrival, `planned_travel_minutes`, `planned_buffer_minutes`, `staff_count`, `vehicle_note`, `note`
+Important Constraints: exactly one source, exactly one dest, source != dest, arrival >= departure, minutes >= 0
+Write Authority: `event-ops` save-transition ADMIN. actuals는 배정 행사 또는 ADMIN
+Delete / History Policy: 거점 비활성화해도 과거 다리 유지 (RESTRICT, 물리삭제 없음)
+Important Notes: 철수/이동/대기/세팅 시간을 한 컬럼에 합치지 않음. 지도 API 없음.
+
 ## events
 
 Purpose: 외부 판매 행사 기본 Entity. 계약 필드와 운영 status를 가진다.
 Primary Key: `id`
 Main Foreign Keys: `created_by` → `profiles` (nullable); `organizer_id` → `event_organizers` (nullable)
-Key Fields: `name`, `starts_at`, `ends_at`, `status` (PREPARING, ACTIVE, ENDED, SETTLED, CANCELLED), `venue_name`, `address`, `organizer_id`, `contract_type` (NONE, COMMISSION, FIXED_FEE, MIXED), `commission_rate`, `fixed_fee`
+Key Fields: `name`, `starts_at`, `ends_at`, `status` (PREPARING, ACTIVE, ENDED, SETTLED, CANCELLED), `schedule_status` (TENTATIVE, CONFIRMED), `venue_name`, `address`, `organizer_id`, `contract_type` (NONE, COMMISSION, FIXED_FEE, MIXED), `commission_rate`, `fixed_fee`
 Important Constraints: ends_at >= starts_at; 공백 금지; COMMISSION이면 rate 필수; FIXED_FEE이면 fee 필수; MIXED면 둘 다; rate 0–100
 Write Authority: Edge `event-admin` (ADMIN). SELECT (PostgREST): 배정 또는 ADMIN, 단 `commission_rate` / `fixed_fee`는 `authenticated` GRANT 없음. 계약 금액은 ADMIN Edge `get`만
 Delete / History Policy: 대부분 자식이 ON DELETE RESTRICT. `event_contacts`만 CASCADE. 날짜가 status를 자동 변경하지 않음
-Important Notes: INSERT 트리거가 EVENT `inventory_locations` 1행을 만든다 (부분 UNIQUE). Finance 요약이 계약 필드를 읽는다. P&L 숫자는 이 테이블에 저장하지 않음. STAFF는 `contract_type`만 볼 수 있고 수수료율/입점비 금액은 볼 수 없다. `organizer_id` NULL = 주최자 미지정(기존 행사). 신규 UI는 Organizer 필수.
+Important Notes: INSERT 트리거가 EVENT `inventory_locations` 1행을 만든다 (부분 UNIQUE). Finance 요약이 계약 필드를 읽는다. P&L 숫자는 이 테이블에 저장하지 않음. STAFF는 `contract_type`만 볼 수 있고 수수료율/입점비 금액은 볼 수 없다. `organizer_id` NULL = 주최자 미지정(기존 행사). 신규 UI는 Organizer 필수. 신규 행사는 `schedule_status` 기본 TENTATIVE. 기존 행사는 마이그레이션에서 CONFIRMED.
 
 ## expense_categories
 
@@ -328,7 +403,7 @@ Key Fields: `location_type` (HQ, EVENT, TEMP, THIRD_PARTY), `name`, `is_active`
 Important Constraints: EVENT면 event_id NOT NULL, 그 외 event_id NULL; unique HQ; unique EVENT per event_id
 Write Authority: `inventory-movement` create/update-location (ADMIN). Event insert가 EVENT location 자동 생성
 Delete / History Policy: movements/positions RESTRICT
-Important Notes: STAFF는 배정 EVENT location만 읽는다. HQ는 ADMIN.
+Important Notes: STAFF는 배정 EVENT location만 읽는다. HQ는 ADMIN. 사람/짐 거점은 `operation_locations`.
 
 ## inventory_movement_counters
 
@@ -385,6 +460,17 @@ Write Authority: `user-admin` create/reissue/revoke (ADMIN). `invite-accept`가 
 Delete / History Policy: revoke는 `revoked_at`. profile 삭제 시 CASCADE
 Important Notes: SELECT RLS ADMIN. 수락 화면은 hash 대조.
 
+## operation_locations
+
+Purpose: 반복 운영거점 (사무실, 집, 숙소, 창고). 재고 장소/행사장이 아님.
+Primary Key: `id`
+Main Foreign Keys: `created_by` SET NULL
+Key Fields: `name`, `location_type` (OFFICE, HOME_BASE, LODGING, STORAGE, OTHER), `address`, `latitude`, `longitude`, `is_active`, `memo`
+Important Constraints: UNIQUE `name`; name not blank
+Write Authority: `event-ops` create/update-location (ADMIN). SELECT: `has_app_access`
+Delete / History Policy: 비활성화 우선. 이동 다리는 RESTRICT로 유지
+Important Notes: 위경도는 사람이 넣는 선택 필드. 지도 API/GPS 추적 없음.
+
 ## preparation_items
 
 Purpose: 집기/소모품 마스터. 판매 SKU 아님.
@@ -394,7 +480,7 @@ Key Fields: `name`, `item_type`, `default_unit`, `requires_return`, `is_active`
 Important Constraints: name/unit not blank
 Write Authority: `prep-admin` upsert-item (ADMIN). SELECT: ADMIN
 Delete / History Policy: set items / snapshots RESTRICT
-Important Notes: Event 화면은 snapshot을 본다.
+Important Notes: Event 화면은 snapshot을 본다. Setup fixture가 optional FK로 연결할 수 있으나 물리치수는 fixture snapshot.
 
 ## preparation_set_items
 

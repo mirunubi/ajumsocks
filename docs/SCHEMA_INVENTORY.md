@@ -1,14 +1,14 @@
 # Schema Inventory
 
-Source: live `pg_catalog` after `npx supabase db reset` (migrations through `20260920160000_event_organizers.sql`).
+Source: live `pg_catalog` after `npx supabase db reset` (migrations through `20260921120000_event_operations.sql`).
 
 Not derived from MASTER PLAN. Future tables (supplier, purchase order, shipment) are absent from this DB and are not listed.
 
 ## Counts
 
-- public business tables: **43**
-- public foreign keys: **101** (includes `profiles.id → auth.users.id`)
-- public enum types: **7**
+- public business tables: **49**
+- public foreign keys: **115** (includes `profiles.id → auth.users.id`)
+- public enum types: **14**
 
 Excluded from table count: `auth`, `storage`, `realtime`, `vault`, `extensions`.
 
@@ -18,9 +18,16 @@ Excluded from table count: `auth`, `storage`, `realtime`, `vault`, `extensions`.
 - `event_assignment_role`: MANAGER, STAFF, PART_TIMER
 - `event_contact_type`: VENUE, HQ, OTHER
 - `event_contract_type`: NONE, COMMISSION, FIXED_FEE, MIXED
+- `event_schedule_status`: TENTATIVE, CONFIRMED
 - `event_status`: PREPARING, ACTIVE, ENDED, SETTLED, CANCELLED
+- `operation_location_type`: OFFICE, HOME_BASE, LODGING, STORAGE, OTHER
 - `preparation_item_type`: EQUIPMENT, CONSUMABLE
 - `preparation_status`: NOT_READY, READY, ON_SITE, RETURNED
+- `setup_fixture_type`: TABLE, RACK, DISPLAY, HANGER, SIGNAGE, OTHER
+- `setup_member_role`: LEAD, MEMBER
+- `setup_photo_type`: ARRIVAL, COMPLETION, OTHER
+- `setup_session_status`: PLANNED, ARRIVED, COMPLETED
+- `transition_movement_subject`: GEAR, CREW, BOTH
 
 ---
 
@@ -71,7 +78,7 @@ Foreign Keys:
 - actor_profile_id → profiles(id) ON DELETE SET NULL
 - event_id → events(id) ON DELETE RESTRICT
 Unique Constraints: none
-Important Checks: action in CREATE, UPDATE, VOID; entity_type in DAILY_SALES, EXPENSE, PRODUCT_COST
+Important Checks: action in CREATE, UPDATE, VOID; entity_type in DAILY_SALES, EXPENSE, PRODUCT_COST, SETUP_SESSION
 Referenced By: none
 
 ## colors
@@ -302,6 +309,67 @@ Important Checks: none listed
 Referenced By:
 - event_preparation_items.plan_id
 
+## event_setup_fixtures
+
+Purpose: Per-event physical install snapshot. Preparation master size changes do not rewrite these rows.
+Primary Key: `id`
+Foreign Keys:
+- preparation_item_id → preparation_items(id) ON DELETE SET NULL
+- setup_session_id → event_setup_sessions(id) ON DELETE RESTRICT
+Unique Constraints: none
+Important Checks: name_snapshot not blank; planned/actual quantity >= 0; width/depth/height/frontage_mm > 0 if supplied; rack_levels > 0 if supplied
+Referenced By: none
+
+## event_setup_members
+
+Purpose: Setup crew assignment. Not attendance or payroll.
+Primary Key: `id`
+Foreign Keys:
+- profile_id → profiles(id) ON DELETE RESTRICT
+- setup_session_id → event_setup_sessions(id) ON DELETE RESTRICT
+Unique Constraints: UNIQUE (setup_session_id, profile_id)
+Important Checks: none listed
+Referenced By: none
+
+## event_setup_photos
+
+Purpose: Setup evidence metadata. Bytes in Storage bucket `setup-photos`. `recorded_at` is server time.
+Primary Key: `id`
+Foreign Keys:
+- captured_by → profiles(id) ON DELETE SET NULL
+- setup_session_id → event_setup_sessions(id) ON DELETE RESTRICT
+Unique Constraints: UNIQUE (storage_path)
+Important Checks: storage_path not blank
+Referenced By: none
+
+## event_setup_sessions
+
+Purpose: One setup work session per row. `event_id` is not PK so a venue can be reset later.
+Primary Key: `id`
+Foreign Keys:
+- created_by → profiles(id) ON DELETE SET NULL
+- event_id → events(id) ON DELETE RESTRICT
+Unique Constraints: none
+Important Checks: planned_end >= planned_start; staff counts >= 0; raw completed after arrival; adjusted completed after adjusted arrival
+Referenced By:
+- event_setup_fixtures.setup_session_id
+- event_setup_members.setup_session_id
+- event_setup_photos.setup_session_id
+
+## event_transition_legs
+
+Purpose: Crew/gear travel between events and operation hubs. Not inventory movements. No map API.
+Primary Key: `id`
+Foreign Keys:
+- created_by → profiles(id) ON DELETE SET NULL
+- from_event_id → events(id) ON DELETE RESTRICT
+- from_operation_location_id → operation_locations(id) ON DELETE RESTRICT
+- to_event_id → events(id) ON DELETE RESTRICT
+- to_operation_location_id → operation_locations(id) ON DELETE RESTRICT
+Unique Constraints: none
+Important Checks: exactly one from endpoint; exactly one to endpoint; source != destination; arrival >= departure; minutes >= 0
+Referenced By: none
+
 ## events
 
 Purpose: Catalog comment: External sales events. Contract fields stored here.
@@ -310,7 +378,7 @@ Foreign Keys:
 - created_by → profiles(id)
 - organizer_id → event_organizers(id) ON DELETE RESTRICT
 Unique Constraints: none
-Important Checks: name/venue/address not blank; ends_at >= starts_at; commission_rate 0–100 or NULL; fixed_fee >= 0 or NULL; contract_type values required for COMMISSION/FIXED_FEE/MIXED
+Important Checks: name/venue/address not blank; ends_at >= starts_at; commission_rate 0–100 or NULL; fixed_fee >= 0 or NULL; contract_type values required for COMMISSION/FIXED_FEE/MIXED; schedule_status TENTATIVE/CONFIRMED independent of event_status
 Referenced By:
 - audit_logs.event_id
 - event_assortment_items.event_id
@@ -327,6 +395,9 @@ Referenced By:
 - event_photos.event_id
 - event_preparation_items.event_id
 - event_preparation_plans.event_id
+- event_setup_sessions.event_id
+- event_transition_legs.from_event_id
+- event_transition_legs.to_event_id
 - inventory_locations.event_id
 
 ## expense_categories
@@ -361,7 +432,7 @@ Foreign Keys:
 Unique Constraints:
 - unique index (event_id) WHERE location_type = 'EVENT' AND event_id IS NOT NULL
 - unique index (location_type) WHERE location_type = 'HQ'
-Important Checks: EVENT requires event_id; non-EVENT requires event_id NULL; name not blank; location_type in HQ, EVENT, TEMP, THIRD_PARTY
+Important Checks: EVENT requires event_id; non-EVENT requires event_id NULL; name not blank; location_type in HQ, EVENT, TEMP, THIRD_PARTY. Not `operation_locations`.
 Referenced By:
 - inventory_adjustments.location_id
 - inventory_movement_items via movements
@@ -432,6 +503,18 @@ Unique Constraints:
 Important Checks: none listed
 Referenced By: none
 
+## operation_locations
+
+Purpose: Repeat crew/gear hubs. Not inventory_locations and not event venues.
+Primary Key: `id`
+Foreign Keys:
+- created_by → profiles(id) ON DELETE SET NULL
+Unique Constraints: UNIQUE (name)
+Important Checks: name not blank
+Referenced By:
+- event_transition_legs.from_operation_location_id
+- event_transition_legs.to_operation_location_id
+
 ## preparation_items
 
 Purpose: Catalog comment: Equipment/consumable master. Not sellable product SKUs.
@@ -442,6 +525,7 @@ Unique Constraints: none
 Important Checks: name not blank; default_unit not blank
 Referenced By:
 - event_preparation_items.source_preparation_item_id
+- event_setup_fixtures.preparation_item_id
 - preparation_set_items.preparation_item_id
 
 ## preparation_set_items

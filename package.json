@@ -24,6 +24,7 @@
     "verify:erd": "node scripts/verify-erd.mjs",
     "verify:organizers": "node scripts/verify-organizers.mjs",
     "verify:pilot-gaps": "node scripts/verify-pilot-gaps.mjs",
+    "verify:operations": "node scripts/verify-operations.mjs",
     "seed:pilot-rehearsal": "node scripts/seed-pilot-rehearsal.mjs",
     "dev": "npm --prefix app run dev",
     "build": "npm --prefix app run build"

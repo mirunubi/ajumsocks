@@ -18,6 +18,7 @@ import { MovementsScreen } from "./screens/MovementsScreen";
 import { MyEventsScreen } from "./screens/MyEventsScreen";
 import { OrganizerDetailScreen } from "./screens/OrganizerDetailScreen";
 import { OrganizersScreen } from "./screens/OrganizersScreen";
+import { OperationLocationsScreen } from "./screens/OperationLocationsScreen";
 import { PreparationSetDetailScreen } from "./screens/PreparationSetDetailScreen";
 import { PreparationSetsScreen } from "./screens/PreparationSetsScreen";
 import { PreparationsScreen } from "./screens/PreparationsScreen";
@@ -126,6 +127,14 @@ export function App() {
         element={
           <AdminGuard>
             <LocationsScreen />
+          </AdminGuard>
+        }
+      />
+      <Route
+        path="/operation-locations"
+        element={
+          <AdminGuard>
+            <OperationLocationsScreen />
           </AdminGuard>
         }
       />

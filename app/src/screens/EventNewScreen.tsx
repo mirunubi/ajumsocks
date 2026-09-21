@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { combineKstDateTime } from "../lib/datetime";
 import { type ContractType, type EventStatus } from "../lib/events";
+import { SCHEDULE_STATUS_LABEL, type ScheduleStatus } from "../lib/operations";
 import { callEventAdmin, callOrganizerAdmin } from "../lib/functions";
 import type { Organizer, OrganizerContact, OrganizerTerms } from "../lib/organizers";
 import { AdminChrome } from "./AdminChrome";
@@ -26,6 +27,7 @@ export function EventNewScreen() {
     end_time: "20:00",
     status: "PREPARING" as EventStatus,
     memo: "",
+    schedule_status: "TENTATIVE" as ScheduleStatus,
     contract_type: "NONE" as ContractType,
     commission_rate: "",
     fixed_fee: "",
@@ -82,6 +84,7 @@ export function EventNewScreen() {
         starts_at: combineKstDateTime(form.start_date, form.start_time),
         ends_at: combineKstDateTime(form.end_date, form.end_time),
         status: form.status,
+        schedule_status: form.schedule_status,
         memo: form.memo,
         contract_type: form.contract_type,
         commission_rate: form.commission_rate === "" ? null : Number(form.commission_rate),
@@ -108,6 +111,14 @@ export function EventNewScreen() {
           onChange={(patch) => setForm((prev) => ({ ...prev, ...patch }))}
           onOrganizerChange={(id) => void onOrganizer(id)}
         />
+        <label>일정 확정</label>
+        <select value={form.schedule_status} onChange={(e) => setForm((prev) => ({ ...prev, schedule_status: e.target.value as ScheduleStatus }))}>
+          {(Object.keys(SCHEDULE_STATUS_LABEL) as ScheduleStatus[]).map((key) => (
+            <option key={key} value={key}>
+              {SCHEDULE_STATUS_LABEL[key]}
+            </option>
+          ))}
+        </select>
         {contacts.length > 0 ? (
           <>
             <h2 className="section-title">주최자 담당자 복사</h2>

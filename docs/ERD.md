@@ -3,7 +3,7 @@
 Source: live PostgreSQL `public` schema after `npx supabase db reset`.  
 Cross-check: `docs/SCHEMA_INVENTORY.md`, `scripts/schema-inventory.json`.
 
-Public business tables: **43**. Public FKs: **101**. Enums: **7**.
+Public business tables: **49**. Public FKs: **115**. Enums: **14**.
 
 `auth.users` is not a public table. It appears only in ERD-A as an external reference for `profiles.id`.
 
@@ -34,6 +34,7 @@ erDiagram
     uuid created_by FK
     uuid organizer_id FK
     event_status status
+    event_schedule_status schedule_status
     event_contract_type contract_type
   }
   event_organizers {
@@ -85,6 +86,7 @@ erDiagram
 - `event_contacts.event_id` is NOT NULL, ON DELETE CASCADE.
 - `events.organizer_id` is nullable (legacy events). New UI requires a selection.
 - `event_organizer_terms` is 1:1 ADMIN-only default contract. Snapshot onto `events` at create.
+- `events.schedule_status` is calendar commitment (TENTATIVE/CONFIRMED), independent from lifecycle `event_status`.
 - Organizer contacts are master rows; `event_contacts` remains the per-event snapshot.
 - Partial UNIQUE on `invites(profile_id)` applies only while `used_at` and `revoked_at` are NULL.
 
@@ -356,4 +358,92 @@ erDiagram
 - `estimated_product_cost` is an **ADMIN manual input** on `event_financial_inputs` (PK = `event_id`). NULL vs 0 is preserved by CHECK (`NULL OR >= 0`).
 - Contract commission/fixed fee columns are on `events`, not duplicated on finance tables. Financial Summary is computed from those source rows (sales, non-void expenses, financial inputs, contract fields).
 - `event_expenses.voided_at` marks exclusion from P&L; void expenses are omitted from profit/loss.
-- `audit_logs` records change history (CREATE/UPDATE/VOID). `event_id` is nullable; entity_type is constrained to DAILY_SALES, EXPENSE, PRODUCT_COST.
+- `audit_logs` records change history (CREATE/UPDATE/VOID). `event_id` is nullable; entity_type is constrained to DAILY_SALES, EXPENSE, PRODUCT_COST, SETUP_SESSION.
+
+---
+
+## ERD-E — SETUP / OPERATION
+
+```mermaid
+erDiagram
+  events {
+    uuid id PK
+    event_schedule_status schedule_status
+  }
+  preparation_items {
+    uuid id PK
+  }
+  event_setup_sessions {
+    uuid id PK
+    uuid event_id FK
+    setup_session_status status
+    timestamptz arrival_recorded_at
+    timestamptz adjusted_arrival_at
+  }
+  event_setup_fixtures {
+    uuid id PK
+    uuid setup_session_id FK
+    uuid preparation_item_id FK
+    setup_fixture_type fixture_type
+    integer width_mm
+    integer planned_quantity
+  }
+  event_setup_members {
+    uuid id PK
+    uuid setup_session_id FK
+    uuid profile_id FK
+    setup_member_role role
+  }
+  event_setup_photos {
+    uuid id PK
+    uuid setup_session_id FK
+    setup_photo_type photo_type
+    text storage_path UK
+    timestamptz recorded_at
+  }
+  operation_locations {
+    uuid id PK
+    operation_location_type location_type
+    boolean is_active
+  }
+  event_transition_legs {
+    uuid id PK
+    uuid from_event_id FK
+    uuid from_operation_location_id FK
+    uuid to_event_id FK
+    uuid to_operation_location_id FK
+    transition_movement_subject movement_subject
+  }
+  profiles {
+    uuid id PK
+  }
+  audit_logs {
+    uuid id PK
+    uuid event_id FK
+    text entity_type
+  }
+
+  events ||--o{ event_setup_sessions : event_id
+  event_setup_sessions ||--o{ event_setup_fixtures : setup_session_id
+  event_setup_sessions ||--o{ event_setup_members : setup_session_id
+  event_setup_sessions ||--o{ event_setup_photos : setup_session_id
+  preparation_items |o--o{ event_setup_fixtures : preparation_item_id
+  profiles ||--o{ event_setup_members : profile_id
+  profiles |o--o{ event_setup_photos : captured_by
+  profiles |o--o{ event_setup_sessions : created_by
+  events |o--o{ event_transition_legs : from_event_id
+  events |o--o{ event_transition_legs : to_event_id
+  operation_locations |o--o{ event_transition_legs : from_operation_location_id
+  operation_locations |o--o{ event_transition_legs : to_operation_location_id
+  profiles |o--o{ operation_locations : created_by
+  profiles |o--o{ event_transition_legs : created_by
+  events |o--o{ audit_logs : event_id
+```
+
+- `event_setup_sessions.event_id` is not unique. A later reset can add another session.
+- Fixture dimensions are integer millimeters. Display frontage is derived: `(frontage_mm_per_unit ?? width_mm) × quantity`. Rack levels total is `rack_levels × quantity`. Summaries are not stored columns.
+- `preparation_item_id` is optional. `name_snapshot` / mm fields stay even if the Preparation master later changes.
+- Raw `arrival_recorded_at` / `completed_recorded_at` / photo `recorded_at` are immutable. ADMIN writes `adjusted_*` and `audit_logs` entity `SETUP_SESSION`.
+- `operation_locations` are crew/gear hubs. They are not `inventory_locations` and not event venues (`events.venue_name` / `address`).
+- Each transition leg has exactly one from endpoint and exactly one to endpoint (event XOR operation location). `movement_subject` is GEAR, CREW, or BOTH. Travel minutes are typed by people; no map API.
+

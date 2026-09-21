@@ -3,6 +3,7 @@ import { Link, Navigate } from "react-router-dom";
 import { denialMessage } from "../lib/access";
 import { formatKstRange, kstHm, kstYmd, scheduleHint } from "../lib/datetime";
 import { EVENT_STATUS_LABEL, type EventRecord } from "../lib/events";
+import { SCHEDULE_STATUS_LABEL } from "../lib/operations";
 import { daysUntil, prepProgress, type EventPrepItem } from "../lib/preparation";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../lib/session";
@@ -43,6 +44,7 @@ function EventCard({ event, extra }: { event: EventRecord; extra: Extra }) {
         </div>
         <div>
           <span className="badge">{EVENT_STATUS_LABEL[event.status]}</span>
+          {event.schedule_status === "TENTATIVE" ? <span className="badge">{SCHEDULE_STATUS_LABEL.TENTATIVE}</span> : null}
           <span className="badge">{scheduleHint(event.starts_at, event.ends_at)}</span>
         </div>
         {extra.prepLabel ? <div className="muted">{extra.prepLabel}</div> : null}
@@ -68,7 +70,7 @@ export function MyEventsScreen() {
     void Promise.all([
       supabase
         .from("events")
-        .select("id, name, venue_name, starts_at, ends_at, status, address, organizer_id")
+        .select("id, name, venue_name, starts_at, ends_at, status, schedule_status, address, organizer_id")
         .order("starts_at", { ascending: true }),
       supabase.from("event_organizers").select("id, name, calendar_color, is_active"),
       supabase.from("event_preparation_items").select("*").is("removed_at", null),

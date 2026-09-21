@@ -41,6 +41,7 @@ export type CalendarEvent = {
   starts_at: string;
   ends_at: string;
   status: string;
+  schedule_status?: string;
   organizer_id: string | null;
   organizer_name: string | null;
   organizer_color: string | null;

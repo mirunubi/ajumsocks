@@ -201,6 +201,7 @@ From root `package.json` (do not invent extra npm names):
 | `npm run verify:phase8` | Finance |
 | `npm run verify:e2e` | Phase 8.5 end-to-end |
 | `npm run verify:organizers` | Event organizers / calendar / login homes |
+| `npm run verify:operations` | Schedule status, setup fixtures, photos, locations, transitions |
 | `npm run verify:erd` | Live schema vs ERD/inventory docs |
 | `npm run build` | `npm --prefix app run build` |
 | `npm run provision:local` | Local Auth users |
@@ -261,7 +262,7 @@ main
 Two assets are operationally distinct:
 
 1. **PostgreSQL data** (schema via `supabase/migrations/`; **data** is not in Git except `seed.sql`, which has no Auth users)
-2. **Storage objects** in buckets `event-photos`, `product-images`, `expense-receipts` (bytes are not in Git; Postgres holds metadata only)
+2. **Storage objects** in buckets `event-photos`, `product-images`, `expense-receipts`, `setup-photos` (bytes are not in Git; Postgres holds metadata only)
 
 Hosted Supabase PITR / Dashboard backups are **outside this repo**. Do not assume they are configured. Schema can be rebuilt with `db push`; event photos/receipts/product images cannot be rebuilt from Git.
 

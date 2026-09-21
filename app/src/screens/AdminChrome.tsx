@@ -25,6 +25,7 @@ export function AdminChrome({ title, children }: { title: string; children: Reac
         <Link to="/products">상품</Link>
         <Link to="/users">사용자</Link>
         <Link to="/locations">재고위치</Link>
+        <Link to="/operation-locations">운영거점</Link>
         <Link to="/preparations">준비물</Link>
       </nav>
       {children}

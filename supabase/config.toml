@@ -455,3 +455,6 @@ verify_jwt = true
 
 [functions.organizer-admin]
 verify_jwt = true
+
+[functions.event-ops]
+verify_jwt = true

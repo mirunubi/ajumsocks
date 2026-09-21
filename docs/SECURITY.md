@@ -110,7 +110,7 @@ Auth JWT expiry (`jwt_expiry = 3600`) is separate. A still-valid JWT with an exp
 
 ## RLS Helpers
 
-Live `private` functions (20). Names below are from `pg_catalog`. `public.has_app_access` etc. were dropped in `20260919130000_private_security.sql`.
+Live `private` functions (24). Names below are from `pg_catalog`. `public.has_app_access` etc. were dropped in `20260919130000_private_security.sql`.
 
 ### Access helpers (used by policies / Edge-equivalent checks)
 
@@ -124,6 +124,8 @@ Live `private` functions (20). Names below are from `pg_catalog`. `public.has_ap
 | `private.can_write_event(uuid)` | yes | `''` | authenticated | `is_admin_user()` only |
 | `private.can_read_location(uuid)` | yes | `''` | authenticated | ADMIN, or EVENT location of a readable event |
 | `private.can_read_movement(uuid)` | yes | `''` | authenticated | ADMIN, or source/dest EVENT location readable |
+| `private.can_read_setup_session(uuid)` | yes | `''` | authenticated | Session whose event is `can_read_event` |
+| `private.can_read_transition_leg(uuid)` | yes | `''` | authenticated | ADMIN, or from/to event readable |
 | `private.storage_event_id(text)` | no | `''` | authenticated | First path folder as event UUID |
 | `private.storage_product_id(text)` | no | `''` | authenticated | First path folder as product UUID |
 
@@ -141,6 +143,8 @@ Live `private` functions (20). Names below are from `pg_catalog`. `public.has_ap
 | `private.guard_confirmed_inventory_check_items()` | CONFIRMED check items immutable |
 | `private.guard_inventory_movement_header()` | Movement delete/status guard |
 | `private.guard_inventory_movement_items()` | Movement item mutability by status |
+| `private.protect_setup_raw_timestamps()` | Setup session raw arrival/completed immutable |
+| `private.protect_setup_photos_immutable()` | Setup photo row UPDATE forbidden |
 
 Do not call dropped `public.*` helper names. Policies use `private.*`.
 
@@ -156,7 +160,7 @@ Pattern after Phase 0 complement:
 
 ### `authenticated` EXECUTE
 
-`has_app_access`, `is_admin_user`, `can_read_event`, `can_write_event`, `can_read_location`, `can_read_movement`, `storage_event_id`, `storage_product_id`.
+`has_app_access`, `is_admin_user`, `can_read_event`, `can_write_event`, `can_read_location`, `can_read_movement`, `can_read_setup_session`, `can_read_transition_leg`, `storage_event_id`, `storage_product_id`.
 
 `current_app_role` / `is_master_user`: exist, EXECUTE not granted to `authenticated` (`20260919130200_private_grants.sql`).
 
@@ -206,8 +210,9 @@ Table writes from the browser: **none** (GRANT SELECT + RLS SELECT policies only
 
 | Domain | STAFF / PART_TIMER (assigned) | ADMIN |
 | --- | --- | --- |
-| Event | SELECT 배정 행사 일반정보 (계약 **금액** 컬럼 제외). Photo upload via Edge. No create/update/status/member write | All events; `commission_rate` / `fixed_fee`는 Edge `event-admin` (Secret). writes via `event-admin` (`add-member` / `remove-member`) |
+| Event | SELECT 배정 행사 일반정보 (계약 **금액** 컬럼 제외). Photo upload via Edge. No create/update/status/member write | All events; `commission_rate` / `fixed_fee`는 Edge `event-admin` (Secret). writes via `event-admin` (`add-member` / `remove-member`). `schedule_status` ADMIN |
 | Preparation | SELECT event snapshot; `prep-admin` `get-event` / `set-status` | Templates (RLS ADMIN SELECT) + apply/structure |
+| Setup | 배정 행사 get-setup, 도착/완료 사진, actual quantity/staff | 계획, fixture 계획, members, 시간보정, 거점, transition 계획 |
 | Assortment | SELECT event snapshot; `get-event` | Templates + apply + manual SKU |
 | Inventory | SELECT checks/current of assigned events; EVENT location/positions/movements involving that EVENT; create/save/confirm/cancel check; dispatch from / receive to that EVENT | HQ/TEMP/THIRD_PARTY, adjustments, draft create, closing distribution |
 | Finance | See next section | Full including cost, P&L lines, audit, void, dashboard |
@@ -223,7 +228,7 @@ Login UI is split (`/admin/login` vs `/login`) but Auth/RLS is unchanged. STAFF 
 | `event_organizers` name/color/active | SELECT (`has_app_access`) | Same + write Edge | No contract columns on this table |
 | `event_organizer_terms` | **No** (RLS `is_admin_user`; Edge 403) | Edge `organizer-admin` | Same pattern as product cost |
 | `event_organizer_contacts` | **No** (RLS ADMIN) | Edge add/update/deactivate | Event snapshot is `event_contacts` |
-| Calendar DTO | assigned events only | all | `event-admin` `calendar` omits contract amounts |
+| Calendar DTO | assigned events only | all | `event-admin` `calendar` omits contract amounts; includes `schedule_status` |
 
 ---
 
@@ -271,6 +276,14 @@ Edge `product-admin` image actions: ADMIN.
 * **delete:** `can_write_event` (ADMIN)
 
 Edge: sign/complete for assigned; `delete-receipt` ADMIN.
+
+### `setup-photos`
+
+* **read:** authenticated AND `can_read_event(storage_event_id(name))`
+* **upload (INSERT):** same as read
+* **delete:** no storage DELETE policy
+
+Edge `event-ops`: sign/complete for assigned readers. Arrival sets `arrival_recorded_at = now()`; completion requires arrival. Raw timestamps are not client-supplied.
 
 Uploads use **signed URLs** issued by Edge (Secret Key), not anonymous public URLs.
 

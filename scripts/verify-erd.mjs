@@ -97,9 +97,9 @@ function main() {
   const erd = erdEntities(erdMd);
   const invFk = inventoryFkCount(inventoryMd);
 
-  expect("live public table count is 43", liveTables.length === 43, String(liveTables.length));
-  expect("live public FK count is 101", live.fk_count === 101, String(live.fk_count));
-  expect("live public enum count is 7", live.enum_count === 7, String(live.enum_count));
+  expect("live public table count is 49", liveTables.length === 49, String(liveTables.length));
+  expect("live public FK count is 115", live.fk_count === 115, String(live.fk_count));
+  expect("live public enum count is 14", live.enum_count === 14, String(live.enum_count));
   expect("snapshot table count matches live", snapshot.public_table_count === liveTables.length);
   expect("snapshot fk count matches live", snapshot.public_fk_count === live.fk_count);
   expect("snapshot enum count matches live", snapshot.public_enum_count === live.enum_count);
@@ -130,7 +130,7 @@ function main() {
 
   expect("inventory FK count == live FK count", invFk === live.fk_count, `inventory=${invFk} live=${live.fk_count}`);
   expect("auth.users is external, not a public table", erd.external.includes("auth.users") && !liveTables.includes("users"));
-  expect("ERD has four domain headings", /ERD-A/.test(erdMd) && /ERD-B/.test(erdMd) && /ERD-C/.test(erdMd) && /ERD-D/.test(erdMd));
+  expect("ERD has five domain headings", /ERD-A/.test(erdMd) && /ERD-B/.test(erdMd) && /ERD-C/.test(erdMd) && /ERD-D/.test(erdMd) && /ERD-E/.test(erdMd));
   expect(
     "current vs positions meanings differ",
     /event_inventory_current[\s\S]*confirmed physical/i.test(erdMd) && /inventory_positions[\s\S]*operational projected/i.test(erdMd),

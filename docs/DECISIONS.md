@@ -307,3 +307,69 @@ Why:
 
 Impact:
 `AdminGuard`는 `/admin/login`으로 보낸다. STAFF가 관리자 로그인 화면에서 성공하면 세션을 종료한다.
+
+---
+
+## D-022 Schedule Commitment와 Event Lifecycle 분리
+
+Decision:
+`events.status`는 PREPARING / ACTIVE / ENDED / SETTLED / CANCELLED만 쓴다. 일정 확정은 별도 `events.schedule_status` (TENTATIVE / CONFIRMED)다. TENTATIVE/CONFIRMED를 `event_status` enum에 넣지 않는다.
+
+Why:
+준비중·진행중은 운영 단계이고, 예정·확정은 캘린더 약속이다. 한 enum에 섞으면 “예정인데 ACTIVE” 같은 상태를 표현할 수 없다.
+
+Impact:
+Calendar는 TENTATIVE를 회색/점선/`예정` badge로 그린다. CONFIRMED만 Organizer 색 카드를 쓴다. 기존 행사는 마이그레이션에서 CONFIRMED, 신규 생성 기본값은 TENTATIVE.
+
+---
+
+## D-023 Setup 원본시간과 관리자 보정시간 분리
+
+Decision:
+도착/완료 원본은 `arrival_recorded_at` / `completed_recorded_at` / photo `recorded_at`이며 서버 `now()`다. 트리거가 한 번 찍힌 raw 값을 막는다. ADMIN 보정은 `adjusted_*` + `adjustment_reason`이고 `audit_logs` entity `SETUP_SESSION`에 남긴다.
+
+Why:
+현장 사진은 증거다. 휴대폰 시각이나 나중에 원본을 고치면 AI와 분쟁 대응에 쓸 raw가 사라진다. 보정은 설명 가능한 별도 값이어야 한다.
+
+Impact:
+Effective time = adjusted ?? raw. 세팅 소요분은 effective completed − arrival. STAFF/PART_TIMER는 raw·adjusted를 고치지 못한다.
+
+---
+
+## D-024 Inventory Location과 Operation Location 분리
+
+Decision:
+재고 장소는 `inventory_locations`다. 사람/짐 반복 거점은 `operation_locations`다. 행사장은 Master로 복제하지 않고 `events.venue_name` / `address`를 쓴다.
+
+Why:
+창고 재고 위치와 “사당집·부산숙소”는 질문이 다르다. 한 location 테이블에 넣으면 재고 Position과 이동 거점이 섞인다.
+
+Impact:
+Transition leg는 event XOR operation location endpoint다. 거점 비활성화는 과거 이동 다리를 지우지 않는다.
+
+---
+
+## D-025 AI 추천 전에 Raw Operation Data 축적
+
+Decision:
+세팅 시간·필요 인원·이동 시간 예측 UI/모델은 구현하지 않는다. 그 전에 계획/실제 물량, 인원, raw/adjusted 시각, 이동 구간을 구조화해 저장한다. 지도 API·자동 거리/시간 계산·GPS는 없다.
+
+Why:
+추천은 입력이 없으면 추측이 된다. 이번 범위는 운영 사실을 남기는 것이다.
+
+Impact:
+`event-ops`는 CRUD와 증빙만 한다. Summary(테이블 수, 전면 m, rack 단수)는 저장 컬럼이 아니라 계산값이다.
+
+---
+
+## D-026 Setup 물량과 물리치수는 Event별 Snapshot으로 보존
+
+Decision:
+설치 집기는 `event_setup_fixtures`에 `name_snapshot`과 mm 정수를 둔다. optional `preparation_item_id`로 준비 마스터와 연결할 수 있지만, Preparation 크기를 바꿔도 과거 설치 기록은 바뀌지 않는다.
+
+Why:
+“1800 테이블을 준비”와 “이 행사에 1800×750 테이블 4개를 설치”는 다른 사실이다. 마스터를 고친다고 지난 판교 전면길이가 바뀌면 학습 데이터가 오염된다.
+
+Impact:
+Preparation Domain을 합치지 않는다. 전면길이는 `(frontage_mm_per_unit ?? width_mm) × quantity`. 계획 수량과 실제 수량을 같이 남긴다.
+

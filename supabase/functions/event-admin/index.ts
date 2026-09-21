@@ -4,6 +4,7 @@ import { callerUserId, secretClient } from "../_shared/supabase.ts";
 
 type AppRole = "ADMIN" | "STAFF" | "PART_TIMER";
 type EventStatus = "PREPARING" | "ACTIVE" | "ENDED" | "SETTLED" | "CANCELLED";
+type ScheduleStatus = "TENTATIVE" | "CONFIRMED";
 type ContractType = "NONE" | "COMMISSION" | "FIXED_FEE" | "MIXED";
 type AssignmentRole = "MANAGER" | "STAFF" | "PART_TIMER";
 type ContactType = "VENUE" | "HQ" | "OTHER";
@@ -17,6 +18,7 @@ type Profile = {
 };
 
 const STATUSES = new Set<EventStatus>(["PREPARING", "ACTIVE", "ENDED", "SETTLED", "CANCELLED"]);
+const SCHEDULES = new Set<ScheduleStatus>(["TENTATIVE", "CONFIRMED"]);
 const CONTRACTS = new Set<ContractType>(["NONE", "COMMISSION", "FIXED_FEE", "MIXED"]);
 const ASSIGNMENTS = new Set<AssignmentRole>(["MANAGER", "STAFF", "PART_TIMER"]);
 const CONTACTS = new Set<ContactType>(["VENUE", "HQ", "OTHER"]);
@@ -50,6 +52,7 @@ Deno.serve(async (req) => {
     if (action === "create") return await requireAdmin(req, isAdmin, () => createEvent(req, service, callerId, body));
     if (action === "update") return await requireAdmin(req, isAdmin, () => updateEvent(req, service, body));
     if (action === "set-status") return await requireAdmin(req, isAdmin, () => setStatus(req, service, body));
+    if (action === "set-schedule-status") return await requireAdmin(req, isAdmin, () => setScheduleStatus(req, service, body));
     if (action === "add-member") return await requireAdmin(req, isAdmin, () => addMember(req, service, callerId, body));
     if (action === "remove-member") return await requireAdmin(req, isAdmin, () => removeMember(req, service, body));
     if (action === "add-contact") return await requireAdmin(req, isAdmin, () => addContact(req, service, body));
@@ -132,6 +135,7 @@ function calendarDto(row: {
   starts_at: string;
   ends_at: string;
   status: EventStatus;
+  schedule_status: ScheduleStatus;
   organizer_id: string | null;
   event_organizers:
     | { id: string; name: string; calendar_color: string }
@@ -147,6 +151,7 @@ function calendarDto(row: {
     starts_at: row.starts_at,
     ends_at: row.ends_at,
     status: row.status,
+    schedule_status: row.schedule_status,
     organizer_id: row.organizer_id,
     organizer_name: organizer?.name ?? null,
     organizer_color: organizer?.calendar_color ?? null,
@@ -285,7 +290,7 @@ async function calendarEvents(
 
   let query = service
     .from("events")
-    .select("id, name, venue_name, starts_at, ends_at, status, organizer_id, event_organizers(id, name, calendar_color)")
+    .select("id, name, venue_name, starts_at, ends_at, status, schedule_status, organizer_id, event_organizers(id, name, calendar_color)")
     .lte("starts_at", new Date(toIso).toISOString())
     .gte("ends_at", new Date(fromIso).toISOString())
     .order("starts_at");
@@ -312,6 +317,7 @@ async function calendarEvents(
           starts_at: string;
           ends_at: string;
           status: EventStatus;
+          schedule_status: ScheduleStatus;
           organizer_id: string | null;
           event_organizers: { id: string; name: string; calendar_color: string } | null;
         },
@@ -330,8 +336,10 @@ async function createEvent(
   const venue_name = text(body.venue_name);
   const address = text(body.address);
   const status = (body.status as EventStatus) || "PREPARING";
+  const schedule_status = (body.schedule_status as ScheduleStatus) || "TENTATIVE";
   if (!name || !venue_name || !address) return json(req, { error: "invalid_input" }, 400);
   if (!STATUSES.has(status)) return json(req, { error: "invalid_input" }, 400);
+  if (!SCHEDULES.has(schedule_status)) return json(req, { error: "invalid_input" }, 400);
 
   const range = parseRange(text(body.starts_at), text(body.ends_at));
   if ("error" in range) return json(req, { error: range.error }, 400);
@@ -358,6 +366,7 @@ async function createEvent(
     address_detail: text(body.address_detail) || null,
     memo: text(body.memo) || null,
     status,
+    schedule_status,
     created_by: callerId,
     organizer_id,
     ...range,
@@ -414,6 +423,10 @@ async function updateEvent(req: Request, service: ReturnType<typeof secretClient
     if (!STATUSES.has(body.status as EventStatus)) return json(req, { error: "invalid_input" }, 400);
     patch.status = body.status;
   }
+  if (body.schedule_status) {
+    if (!SCHEDULES.has(body.schedule_status as ScheduleStatus)) return json(req, { error: "invalid_input" }, 400);
+    patch.schedule_status = body.schedule_status;
+  }
 
   const { data, error } = await service.from("events").update(patch).eq("id", id).select("*").maybeSingle();
   if (error) return json(req, { error: error.message }, 400);
@@ -425,6 +438,16 @@ async function setStatus(req: Request, service: ReturnType<typeof secretClient>,
   const status = body.status as EventStatus;
   if (!id || !STATUSES.has(status)) return json(req, { error: "invalid_input" }, 400);
   const { data, error } = await service.from("events").update({ status }).eq("id", id).select("*").maybeSingle();
+  if (error) return json(req, { error: error.message }, 400);
+  if (!data) return json(req, { error: "not_found" }, 404);
+  return json(req, { event: data });
+}
+
+async function setScheduleStatus(req: Request, service: ReturnType<typeof secretClient>, body: Record<string, unknown>) {
+  const id = text(body.id);
+  const schedule_status = body.schedule_status as ScheduleStatus;
+  if (!id || !SCHEDULES.has(schedule_status)) return json(req, { error: "invalid_input" }, 400);
+  const { data, error } = await service.from("events").update({ schedule_status }).eq("id", id).select("*").maybeSingle();
   if (error) return json(req, { error: error.message }, 400);
   if (!data) return json(req, { error: "not_found" }, 404);
   return json(req, { event: data });
