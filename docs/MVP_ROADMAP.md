@@ -6,7 +6,7 @@ ajumsocks MVP의 목적은 기능을 최대한 많이 만드는 것이 아니라
 새로운 기능 아이디어는 Web MVP 완료 조건에 직접 필요하지 않다면
 MVP 이후 Backlog로 보낸다.
 
-Architecture, Schema, Security의 현재 구현 설명은 이 문서에 다시 쓰지 않는다. 각각 `docs/ARCHITECTURE.md`, `docs/SCHEMA_INVENTORY.md`, `docs/SECURITY.md`, `docs/DECISIONS.md`를 본다. Pilot 준비 감사는 `docs/MVP_GAP_CHECK.md`.
+Architecture, Schema, Security의 현재 구현 설명은 이 문서에 다시 쓰지 않는다. 각각 `docs/ARCHITECTURE.md`, `docs/SCHEMA_INVENTORY.md`, `docs/SECURITY.md`, `docs/DECISIONS.md`를 본다. Pilot 준비 감사는 `docs/MVP_GAP_CHECK.md`. Web MVP 운영 리허설은 `docs/PILOT_REHEARSAL.md`.
 
 ---
 
@@ -14,9 +14,10 @@ Architecture, Schema, Security의 현재 구현 설명은 이 문서에 다시 �
 
 | Field | Value |
 | --- | --- |
-| Current MVP Baseline | `a6c253a` (`feat: improve event scheduling and organizer workflow`) |
-| Included | Phase 0 ~ Phase 8.5, MVP 운영개선 01 |
-| Status | Web MVP feature baseline in progress |
+| Current MVP Baseline | `fd66f7e` (`fix: close web MVP pilot gaps`) |
+| Included | Phase 0 ~ Phase 8.5, MVP 운영개선 01, P1 Gap Fix |
+| Status | READY FOR PILOT |
+| Real Event Pilot | NEXT |
 | Phase 9 | not started |
 
 ---
@@ -368,6 +369,7 @@ Phase 9 후보 (상세 설계하지 않음):
 | MVP 운영개선 01 | COMPLETE |
 | Web MVP Gap Check | COMPLETE — `docs/MVP_GAP_CHECK.md` |
 | Web MVP Gap Fix | COMPLETE |
+| Pilot Rehearsal | COMPLETE — `docs/PILOT_REHEARSAL.md` (GO FOR REAL PILOT; 실제 행사 미착수) |
 | Real Event Pilot | NEXT |
 | Web MVP Freeze | PENDING |
 | Android v1 | PENDING |
@@ -376,4 +378,4 @@ Phase 9 후보 (상세 설계하지 않음):
 | Mobile v1.5 | PENDING |
 | Phase 9 | NOT STARTED |
 
-Baseline: **`a6c253a`**.
+Baseline: **`fd66f7e`**. Real Event Pilot is still **NEXT**.
